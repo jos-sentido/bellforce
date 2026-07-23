@@ -7,16 +7,18 @@ interface TrainingHubViewProps {
   activeCycle: CircuitCycle | null;
   completedCount: number;
   totalWorkouts: number;
+  greeting: string;
   onSelectCircuit: () => void;
   onSelectStandalone: () => void;
   onNewCircuit: () => void;
 }
 
-const TrainingHubView: React.FC<TrainingHubViewProps> = ({ 
-  activeCycle, 
-  completedCount, 
-  totalWorkouts, 
-  onSelectCircuit, 
+const TrainingHubView: React.FC<TrainingHubViewProps> = ({
+  activeCycle,
+  completedCount,
+  totalWorkouts,
+  greeting,
+  onSelectCircuit,
   onSelectStandalone,
   onNewCircuit
 }) => {
@@ -25,8 +27,8 @@ const TrainingHubView: React.FC<TrainingHubViewProps> = ({
   return (
     <div className="py-6 space-y-8 animate-in fade-in duration-500">
       <header>
-        <h2 className="font-heading text-3xl leading-none text-black">¿QUÉ ENTRENAMOS HOY?</h2>
-        <p className="text-[12px] font-bold text-gray-500 uppercase tracking-widest mt-2">Selecciona tu modalidad de sesión</p>
+        <h2 className="font-heading text-3xl leading-none text-black">{greeting}</h2>
+        <p className="text-[12px] font-bold text-gray-500 uppercase tracking-widest mt-2">¿Qué entrenamos hoy?</p>
       </header>
 
       <div className="space-y-6">

@@ -13,7 +13,8 @@ import AuthView from './views/AuthView';
 import TrainingHubView from './views/TrainingHubView';
 import StandalonePickerView from './views/StandalonePickerView';
 import SettingsView from './views/SettingsView';
-import { observeAuth, logout as firebaseLogout } from './services/auth';
+import { observeAuth, logout as firebaseLogout, updateUserProfile } from './services/auth';
+import { buildGreeting } from './services/greeting';
 import {
   loadWorkouts, loadTemplates, loadCycles, seedGlobalBase,
   createWorkout, updateWorkout, deleteWorkout,
@@ -124,6 +125,13 @@ const App: React.FC = () => {
     setIsViewingActiveCircuit(false);
     setIsManagingCircuit(false);
   }, []);
+
+  const handleUpdateProfile = useCallback(async (data: { name?: string; photoURL?: string }) => {
+    const user = state.currentUser;
+    if (!user) return;
+    await updateUserProfile(user.id, data);
+    setState(prev => prev.currentUser ? { ...prev, currentUser: { ...prev.currentUser, ...data } } : prev);
+  }, [state.currentUser]);
 
   const handleExportData = useCallback(() => {
     const dataStr = JSON.stringify({ library: state.library, templates: state.templates, cycles: state.cycles }, null, 2);
@@ -467,6 +475,7 @@ const App: React.FC = () => {
               activeCycle={currentCycle}
               completedCount={currentCycle?.logs.filter(l => l.completed).length || 0}
               totalWorkouts={currentCycle?.workoutIds?.length || 0}
+              greeting={buildGreeting(state.currentUser.name, userCycles)}
               onSelectCircuit={() => setIsViewingActiveCircuit(true)}
               onSelectStandalone={() => setIsPickingStandalone(true)}
               onNewCircuit={() => setShowTemplatePicker(true)}
@@ -515,6 +524,7 @@ const App: React.FC = () => {
             onLogout={handleLogout}
             onExport={handleExportData}
             onImport={handleImportData}
+            onUpdateProfile={handleUpdateProfile}
           />
         );
       default:

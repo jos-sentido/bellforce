@@ -40,6 +40,7 @@ async function ensureProfile(fbUser: FirebaseUser, nameOverride?: string): Promi
       email: data.email || fbUser.email || '',
       role,
       joinedDate: data.joinedDate || undefined,
+      photoURL: data.photoURL || fbUser.photoURL || undefined,
     };
   }
 
@@ -48,10 +49,22 @@ async function ensureProfile(fbUser: FirebaseUser, nameOverride?: string): Promi
     email: fbUser.email || '',
     role: desiredRole,
     joinedDate: new Date().toISOString(),
+    photoURL: fbUser.photoURL || '',
     createdAt: serverTimestamp(),
   };
   await setDoc(ref, profile);
-  return { id: fbUser.uid, name: profile.name, email: profile.email, role: desiredRole, joinedDate: profile.joinedDate };
+  return { id: fbUser.uid, name: profile.name, email: profile.email, role: desiredRole, joinedDate: profile.joinedDate, photoURL: profile.photoURL || undefined };
+}
+
+// Actualiza el perfil del usuario (nombre y/o foto) en Firestore y en Auth.
+export async function updateUserProfile(uid: string, data: { name?: string; photoURL?: string }): Promise<void> {
+  await setDoc(doc(db, 'profiles', uid), data, { merge: true });
+  if (auth.currentUser) {
+    await updateProfile(auth.currentUser, {
+      ...(data.name !== undefined ? { displayName: data.name } : {}),
+      ...(data.photoURL !== undefined ? { photoURL: data.photoURL } : {}),
+    });
+  }
 }
 
 export async function registerWithEmail(name: string, email: string, password: string): Promise<User> {

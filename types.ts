@@ -7,6 +7,7 @@ export interface User {
   email: string;
   role: UserRole;
   joinedDate?: string;
+  photoURL?: string;
 }
 
 export interface WorkoutHistoryEntry {
