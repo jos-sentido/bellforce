@@ -15,6 +15,12 @@ export interface WorkoutHistoryEntry {
   date: string;
 }
 
+// Elemento de medios (imagen o video) para el carrete estilo feed.
+export interface MediaItem {
+  type: 'image' | 'video';
+  url: string;
+}
+
 export interface Workout {
   id: string;
   name: string;
@@ -22,6 +28,7 @@ export interface Workout {
   type: string;
   duration: string;
   description: string;
+  media?: MediaItem[]; // carrete de videos/imágenes del workout (feed)
   history?: WorkoutHistoryEntry[];
   createdBy: string; // ID del usuario
   isPublic: boolean; // Si es visible para todos
@@ -31,7 +38,8 @@ export interface WorkoutLog {
   workoutId: string;
   date: string;
   time: string;
-  statsImages: string[]; 
+  statsImages: string[];
+  sessionMedia?: MediaItem[]; // videos/imágenes de la sesión registrada
   progressiveOverload: string;
   comments: string;
   completed: boolean;

@@ -1,6 +1,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { Workout, CircuitTemplate, UserRole, CircuitCycle } from '../types';
+import { uploadMedia, isCloudinaryConfigured } from '../services/cloudinary';
+import MediaCarousel from '../components/MediaCarousel';
 
 interface LibraryViewProps {
   userRole: UserRole;
@@ -31,6 +33,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
   const [showWorkoutPicker, setShowWorkoutPicker] = useState(false);
   const [pickerSearch, setPickerSearch] = useState('');
   const [pickerTypeFilter, setPickerTypeFilter] = useState<string | null>(null);
+  const [mediaUploading, setMediaUploading] = useState(false);
 
   const [formW, setFormW] = useState<Omit<Workout, 'id'>>({ 
     name: '', weight: '', type: '', duration: '', description: '', isPublic: false, createdBy: userId 
@@ -87,8 +90,32 @@ const LibraryView: React.FC<LibraryViewProps> = ({
     if (!formW.name) return;
     if (editingW && editingW.id) onUpdateWorkout({ ...formW, id: editingW.id } as Workout);
     else onAddToLibrary(formW);
-    setEditingW(null); 
+    setEditingW(null);
     setFormW({ name: '', weight: '', type: '', duration: '', description: '', isPublic: false, createdBy: userId });
+  };
+
+  const handleAddWorkoutMedia = async (files: FileList) => {
+    if (!isCloudinaryConfigured) {
+      alert('Configura Cloudinary para subir videos/imágenes.');
+      return;
+    }
+    setMediaUploading(true);
+    try {
+      const uploaded = [];
+      for (const file of Array.from(files)) {
+        try { uploaded.push(await uploadMedia(file)); }
+        catch (e) { console.error('uploadMedia', e); }
+      }
+      if (uploaded.length) {
+        setFormW(prev => ({ ...prev, media: [...(prev.media || []), ...uploaded] }));
+      }
+    } finally {
+      setMediaUploading(false);
+    }
+  };
+
+  const removeWorkoutMedia = (idx: number) => {
+    setFormW(prev => ({ ...prev, media: (prev.media || []).filter((_, i) => i !== idx) }));
   };
 
   const handleSaveTemplate = () => {
@@ -272,6 +299,9 @@ const LibraryView: React.FC<LibraryViewProps> = ({
              </div>
              
              <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-black space-y-6">
+                {previewW.media && previewW.media.length > 0 && (
+                  <MediaCarousel media={previewW.media} />
+                )}
                 <section>
                   <div className="flex gap-2 mb-3">
                     <span className="bg-[#ebca7a] text-black px-2 py-1 rounded text-[11px] font-bold border border-black">{previewW.weight}</span>
@@ -469,6 +499,34 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                 <label className="text-[11px] font-black text-gray-700 uppercase ml-1">Descripción</label>
                 <textarea placeholder="Ejercicios y reps..." className="w-full p-3 neo-brutalism rounded-lg text-sm min-h-[100px] border-black resize-none bg-white text-black font-bold" value={formW.description} onChange={e => setFormW({...formW, description: e.target.value})} />
              </div>
+
+             {/* Carrete de videos / imágenes del workout */}
+             <div className="space-y-1">
+                <label className="text-[11px] font-black text-gray-700 uppercase ml-1">Videos / Fotos del workout</label>
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                   {(formW.media || []).map((m, idx) => (
+                     <div key={idx} className="relative w-20 h-20 shrink-0 neo-brutalism rounded-lg overflow-hidden bg-black border-2 border-black">
+                       {m.type === 'video'
+                         ? <video src={m.url} className="w-full h-full object-cover" muted />
+                         : <img src={m.url} className="w-full h-full object-cover" />}
+                       {m.type === 'video' && (
+                         <span className="absolute bottom-1 left-1 text-white text-[10px]">▶</span>
+                       )}
+                       <button type="button" onClick={() => removeWorkoutMedia(idx)} className="absolute top-0.5 right-0.5 bg-white rounded-full p-0.5 border border-black">
+                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                       </button>
+                     </div>
+                   ))}
+                   <label className={`w-20 h-20 shrink-0 neo-brutalism rounded-lg bg-white flex flex-col items-center justify-center cursor-pointer border-2 border-black ${mediaUploading ? 'opacity-50' : ''}`}>
+                     {mediaUploading
+                       ? <div className="w-5 h-5 border-4 border-black border-t-transparent rounded-full animate-spin" />
+                       : <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"></path></svg>}
+                     <input type="file" className="hidden" accept="image/*,video/*" multiple disabled={mediaUploading} onChange={(e) => { if (e.target.files?.length) handleAddWorkoutMedia(e.target.files); e.target.value = ''; }} />
+                   </label>
+                </div>
+                {!isCloudinaryConfigured && <p className="text-[10px] text-gray-400 font-bold ml-1">Configura Cloudinary para subir medios.</p>}
+             </div>
+
              <div className="flex gap-3 pt-2">
                 <button onClick={handleSaveWorkout} className="flex-1 neo-brutalism bg-[#a3cfbb] p-4 rounded-xl font-heading text-xs uppercase border-black">GUARDAR</button>
                 <button onClick={() => setEditingW(null)} className="flex-1 neo-brutalism bg-gray-200 p-4 rounded-xl font-heading text-xs uppercase border-black">CERRAR</button>
