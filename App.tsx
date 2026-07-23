@@ -76,6 +76,7 @@ const App: React.FC = () => {
   const [activeStandaloneLogDate, setActiveStandaloneLogDate] = useState<string | null>(null);
 
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState<CircuitTemplate | null>(null);
   const [isStandaloneMode, setIsStandaloneMode] = useState(false);
   const [isPickingStandalone, setIsPickingStandalone] = useState(false);
   const [isViewingActiveCircuit, setIsViewingActiveCircuit] = useState(false);
@@ -113,6 +114,7 @@ const App: React.FC = () => {
     setIsViewingActiveCircuit(false);
     setIsManagingCircuit(false);
     setShowTemplatePicker(false);
+    setPreviewTemplate(null);
   }, []);
 
   const handleLogout = useCallback(async () => {
@@ -550,25 +552,53 @@ const App: React.FC = () => {
 
       {showTemplatePicker && (
         <div className="fixed inset-0 z-[3000] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
-           <div className="bg-white neo-brutalism p-6 rounded-2xl w-full max-w-sm border-black">
+           <div className="bg-white neo-brutalism p-6 rounded-2xl w-full max-w-sm border-black max-h-[85vh] flex flex-col">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="font-heading text-xl uppercase">Nueva Programación</h3>
-                <button onClick={() => setShowTemplatePicker(false)} className="text-gray-500 hover:text-black">
+                <h3 className="font-heading text-xl uppercase">{previewTemplate ? previewTemplate.name : 'Nueva Programación'}</h3>
+                <button onClick={() => { setShowTemplatePicker(false); setPreviewTemplate(null); }} className="text-gray-500 hover:text-black">
                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
               </div>
-              <div className="space-y-3 mb-6">
-                {state.templates.map(t => (
-                  <button key={t.id} onClick={() => handleStartTemplate(t)} className="w-full text-left p-4 border-2 border-black rounded-xl hover:bg-[#ebca7a]/20 transition-all flex justify-between items-center group">
-                    <div>
-                      <h4 className="font-heading text-xs uppercase">{t.name}</h4>
-                      <p className="text-[10px] font-bold text-gray-500 uppercase">{t.workoutIds.length} Sesiones</p>
-                    </div>
-                    <svg className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7"></path></svg>
+
+              {previewTemplate ? (
+                <>
+                  <button onClick={() => setPreviewTemplate(null)} className="flex items-center gap-1 text-[11px] font-black uppercase text-gray-500 mb-3">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                    Volver
                   </button>
-                ))}
-              </div>
-              <button onClick={() => { setShowTemplatePicker(false); setActiveTab('library'); }} className="w-full bg-black text-white p-4 rounded-xl font-heading text-[12px] uppercase tracking-widest">Gestionar Plantillas</button>
+                  <p className="text-[10px] font-black uppercase text-gray-500 mb-3">{previewTemplate.workoutIds.length} sesiones en este circuito</p>
+                  <div className="flex-1 overflow-y-auto space-y-2 pr-1 mb-4 scrollbar-thin scrollbar-thumb-black">
+                    {previewTemplate.workoutIds.map((id, idx) => {
+                      const w = state.library.find(x => x.id === id);
+                      return (
+                        <div key={`${id}-${idx}`} className="p-3 border-2 border-black rounded-xl bg-gray-50 flex items-center gap-3">
+                          <span className="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0">{idx + 1}</span>
+                          <div className="flex-1 overflow-hidden">
+                            <p className="text-[11px] font-black uppercase leading-tight truncate">{w?.name || 'Workout'}</p>
+                            <p className="text-[9px] text-gray-600 font-bold uppercase">{w?.weight} • {w?.type}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button onClick={() => { handleStartTemplate(previewTemplate); setPreviewTemplate(null); }} className="w-full neo-brutalism bg-[#ebca7a] text-black p-4 rounded-xl font-heading text-sm uppercase border-black active:translate-y-1">Activar circuito</button>
+                </>
+              ) : (
+                <>
+                  <div className="flex-1 overflow-y-auto space-y-3 mb-6 pr-1 scrollbar-thin scrollbar-thumb-black">
+                    {state.templates.map(t => (
+                      <button key={t.id} onClick={() => setPreviewTemplate(t)} className="w-full text-left p-4 border-2 border-black rounded-xl hover:bg-[#ebca7a]/20 transition-all flex justify-between items-center group">
+                        <div>
+                          <h4 className="font-heading text-xs uppercase">{t.name}</h4>
+                          <p className="text-[10px] font-bold text-gray-500 uppercase">{t.workoutIds.length} Sesiones</p>
+                        </div>
+                        <svg className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7"></path></svg>
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={() => { setShowTemplatePicker(false); setActiveTab('library'); }} className="w-full bg-black text-white p-4 rounded-xl font-heading text-[12px] uppercase tracking-widest">Gestionar Plantillas</button>
+                </>
+              )}
            </div>
         </div>
       )}

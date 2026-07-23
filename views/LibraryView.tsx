@@ -170,7 +170,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
         onChange={e => setSearchTerm(e.target.value)} 
       />
 
-      <div className="space-y-4 pb-12">
+      <div className="space-y-5 pt-3 pb-12">
         {activeTab === 'workouts' ? filteredW.map(w => {
           const isMyPrivate = !w.isPublic && w.createdBy === userId;
           const isMyPublic = w.isPublic && w.createdBy === userId;
@@ -180,81 +180,66 @@ const LibraryView: React.FC<LibraryViewProps> = ({
               key={w.id} 
               className={`neo-brutalism p-4 rounded-xl relative border-black shadow-[4px_4px_0px_#000] transition-colors ${w.isPublic ? 'bg-white' : 'bg-[#fdf6e3]'}`}
             >
-              <div className="flex justify-between items-start mb-2">
-                <div onClick={() => setPreviewW(w)} className="cursor-pointer flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-heading text-lg leading-none">{w.name}</h4>
-                    {w.isPublic
-                      ? <EyeIcon className="w-4 h-4 text-[#c6a256] shrink-0" />
-                      : <EyeOffIcon className="w-4 h-4 text-gray-400 shrink-0" />}
-                  </div>
-                  <p className="text-[11px] font-bold uppercase flex items-center gap-1.5">
-                    <span className={w.isPublic ? 'text-[#c6a256]' : 'text-gray-600'}>
-                      {isMyPublic ? 'TU CONTENIDO PÚBLICO' : isMyPrivate ? 'TU ENTRENAMIENTO PRIVADO' : 'BELLFORCE GLOBAL'}
-                    </span>
-                    <span className="text-gray-400">•</span>
-                    <span className="text-gray-600">{w.weight}</span>
-                  </p>
+              {/* Clúster de acciones flotante en la esquina (tipo pestaña) */}
+              <div className="absolute -top-3 right-3 flex gap-1.5 z-20">
+                <div title={w.isPublic ? 'Visible para todos' : 'Solo tú'} className="w-7 h-7 flex items-center justify-center bg-white border-2 border-black rounded-md shadow-[2px_2px_0px_#000]">
+                  {w.isPublic ? <EyeIcon className="w-4 h-4 text-[#c6a256]" /> : <EyeOffIcon className="w-4 h-4 text-gray-400" />}
                 </div>
-                
-                <div className="flex gap-2">
-                   {onQuickStart && (
-                      <button 
-                        onClick={() => onQuickStart(w)}
-                        title="Entrenar Ahora"
-                        className="w-7 h-7 flex items-center justify-center bg-black text-[#ebca7a] border-2 border-black rounded-lg shadow-[2px_2px_0px_#ebca7a] active:translate-y-0.5 active:shadow-none hover:bg-gray-900"
-                      >
-                        <BoltIcon className="w-4 h-4" />
-                      </button>
-                   )}
-                  {(userRole === 'admin' || w.createdBy === userId) && (
-                    <>
-                      <button 
-                        onClick={() => { setEditingW(w); setFormW(w); }} 
-                        className="w-7 h-7 flex items-center justify-center bg-white border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-y-0.5 active:shadow-none hover:bg-[#ebca7a]"
-                      >
-                        <EditIcon />
-                      </button>
-                      <button 
-                        onClick={() => onDeleteWorkout(w.id)} 
-                        className="w-7 h-7 flex items-center justify-center bg-white border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-y-0.5 active:shadow-none hover:bg-red-50"
-                      >
-                        <TrashIcon />
-                      </button>
-                    </>
-                  )}
-                </div>
+                {onQuickStart && (
+                  <button onClick={() => onQuickStart(w)} title="Entrenar ahora" className="w-7 h-7 flex items-center justify-center bg-black text-[#ebca7a] border-2 border-black rounded-md shadow-[2px_2px_0px_#000] active:translate-y-0.5 active:shadow-none hover:bg-gray-900">
+                    <BoltIcon className="w-4 h-4" />
+                  </button>
+                )}
+                {(userRole === 'admin' || w.createdBy === userId) && (
+                  <>
+                    <button onClick={() => { setEditingW(w); setFormW(w); }} title="Editar" className="w-7 h-7 flex items-center justify-center bg-white border-2 border-black rounded-md shadow-[2px_2px_0px_#000] active:translate-y-0.5 active:shadow-none hover:bg-[#ebca7a]">
+                      <EditIcon />
+                    </button>
+                    <button onClick={() => onDeleteWorkout(w.id)} title="Eliminar" className="w-7 h-7 flex items-center justify-center bg-white border-2 border-black rounded-md shadow-[2px_2px_0px_#000] active:translate-y-0.5 active:shadow-none hover:bg-red-50">
+                      <TrashIcon />
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <div onClick={() => setPreviewW(w)} className="cursor-pointer pt-1 mb-2">
+                <h4 className="font-heading text-lg leading-tight mb-1 pr-2">{w.name}</h4>
+                <p className="text-[11px] font-bold uppercase flex items-center gap-1.5">
+                  <span className={w.isPublic ? 'text-[#c6a256]' : 'text-gray-600'}>
+                    {isMyPublic ? 'TU CONTENIDO PÚBLICO' : isMyPrivate ? 'TU ENTRENAMIENTO PRIVADO' : 'BELLFORCE GLOBAL'}
+                  </span>
+                  <span className="text-gray-400">•</span>
+                  <span className="text-gray-600 whitespace-nowrap">{w.weight}</span>
+                </p>
               </div>
               <p className="text-[11px] text-gray-600 line-clamp-1 mb-4 italic">{w.description}</p>
               <button onClick={() => setPreviewW(w)} className="w-full neo-brutalism bg-white p-2 rounded-lg font-heading text-[12px] border-black hover:bg-gray-50">DETALLES</button>
             </div>
           );
         }) : filteredT.map(t => (
-          <div key={t.id} className={`neo-brutalism p-4 rounded-xl border-black shadow-[4px_4px_0px_#000] ${t.isPublic ? 'bg-white' : 'bg-[#fdf6e3]'}`}>
-            <div className="flex justify-between items-start mb-4">
-               <div>
-                 <div className="flex items-center gap-2 mb-1">
-                   <h4 className="font-heading text-lg leading-none">{t.name}</h4>
-                   {t.isPublic
-                     ? <EyeIcon className="w-4 h-4 text-[#c6a256] shrink-0" />
-                     : <EyeOffIcon className="w-4 h-4 text-gray-400 shrink-0" />}
-                 </div>
-                 <p className="text-[11px] font-bold uppercase flex items-center gap-1.5">
-                   <span className={t.isPublic ? 'text-[#c6a256]' : 'text-gray-600'}>
-                     {t.isPublic ? (t.createdBy === userId ? 'TU CIRCUITO PÚBLICO' : 'BELLFORCE GLOBAL') : 'CIRCUITO PERSONAL'}
-                   </span>
-                   <span className="text-gray-400">•</span>
-                   <span className="text-gray-600">{t.workoutIds.length} Sesiones</span>
-                 </p>
-               </div>
-               <div className="flex gap-2">
-                  {(userRole === 'admin' || t.createdBy === userId) && (
-                    <>
-                      <button onClick={() => { setEditingT(t); setFormT(t); }} className="w-7 h-7 flex items-center justify-center bg-white border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-y-0.5 active:shadow-none"><EditIcon /></button>
-                      <button onClick={() => onDeleteTemplate(t.id)} className="w-7 h-7 flex items-center justify-center bg-white border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-y-0.5 active:shadow-none"><TrashIcon /></button>
-                    </>
-                  )}
-               </div>
+          <div key={t.id} className={`neo-brutalism p-4 rounded-xl relative border-black shadow-[4px_4px_0px_#000] ${t.isPublic ? 'bg-white' : 'bg-[#fdf6e3]'}`}>
+            {/* Clúster de acciones flotante en la esquina */}
+            <div className="absolute -top-3 right-3 flex gap-1.5 z-20">
+              <div title={t.isPublic ? 'Visible para todos' : 'Solo tú'} className="w-7 h-7 flex items-center justify-center bg-white border-2 border-black rounded-md shadow-[2px_2px_0px_#000]">
+                {t.isPublic ? <EyeIcon className="w-4 h-4 text-[#c6a256]" /> : <EyeOffIcon className="w-4 h-4 text-gray-400" />}
+              </div>
+              {(userRole === 'admin' || t.createdBy === userId) && (
+                <>
+                  <button onClick={() => { setEditingT(t); setFormT(t); }} title="Editar" className="w-7 h-7 flex items-center justify-center bg-white border-2 border-black rounded-md shadow-[2px_2px_0px_#000] active:translate-y-0.5 active:shadow-none hover:bg-[#ebca7a]"><EditIcon /></button>
+                  <button onClick={() => onDeleteTemplate(t.id)} title="Eliminar" className="w-7 h-7 flex items-center justify-center bg-white border-2 border-black rounded-md shadow-[2px_2px_0px_#000] active:translate-y-0.5 active:shadow-none hover:bg-red-50"><TrashIcon /></button>
+                </>
+              )}
+            </div>
+
+            <div className="pt-1 mb-4">
+               <h4 className="font-heading text-lg leading-tight mb-1 pr-2">{t.name}</h4>
+               <p className="text-[11px] font-bold uppercase flex items-center gap-1.5">
+                 <span className={t.isPublic ? 'text-[#c6a256]' : 'text-gray-600'}>
+                   {t.isPublic ? (t.createdBy === userId ? 'TU CIRCUITO PÚBLICO' : 'BELLFORCE GLOBAL') : 'CIRCUITO PERSONAL'}
+                 </span>
+                 <span className="text-gray-400">•</span>
+                 <span className="text-gray-600 whitespace-nowrap">{t.workoutIds.length} Sesiones</span>
+               </p>
             </div>
             <div className="flex gap-2">
                <button onClick={() => setPreviewT(t)} className="flex-1 neo-brutalism bg-white p-3 rounded-xl font-heading text-[11px] uppercase border-black">Explorar</button>
