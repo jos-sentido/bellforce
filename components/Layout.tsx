@@ -233,18 +233,23 @@ const Layout: React.FC<LayoutProps> = ({
             </div>
           )}
 
-          {/* FAB flotante (toggle) */}
-          <button
-            onClick={() => setIsNavOpen(!isNavOpen)}
-            className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[1450] w-16 h-16 neo-brutalism rounded-full flex items-center justify-center border-black shadow-[4px_4px_0px_#000] active:scale-95 transition-colors ${isNavOpen ? 'bg-[#ebca7a]' : 'bg-black'}`}
-            aria-label={isNavOpen ? 'Cerrar menú' : 'Abrir menú'}
-          >
-            <KettlebellLogo
-              className="w-9 h-9"
-              kettlebellColor={isNavOpen ? 'black' : 'white'}
-              boltColor={isNavOpen ? 'black' : '#ebca7a'}
-            />
-          </button>
+          {/* FAB flotante en la esquina inferior izquierda con etiqueta MENÚ */}
+          <div className="fixed bottom-5 left-4 z-[1450] flex flex-col items-center gap-1">
+            <button
+              onClick={() => setIsNavOpen(!isNavOpen)}
+              className={`w-14 h-14 neo-brutalism rounded-full flex items-center justify-center border-black shadow-[4px_4px_0px_#000] active:scale-95 transition-colors ${isNavOpen ? 'bg-[#ebca7a]' : 'bg-black'}`}
+              aria-label={isNavOpen ? 'Cerrar menú' : 'Abrir menú'}
+            >
+              <KettlebellLogo
+                className="w-8 h-8"
+                kettlebellColor={isNavOpen ? 'black' : 'white'}
+                boltColor={isNavOpen ? 'black' : '#ebca7a'}
+              />
+            </button>
+            <span className="font-heading text-[10px] text-black bg-[#ebca7a] px-2 py-0.5 rounded border-2 border-black uppercase font-black">
+              {isNavOpen ? 'Cerrar' : 'Menú'}
+            </span>
+          </div>
         </>
       )}
     </div>
