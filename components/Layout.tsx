@@ -133,16 +133,16 @@ const Layout: React.FC<LayoutProps> = ({
                     <div key={cycle.id} className="relative">
                       <button onClick={() => handleSelectCycle(actualIdx)} className={`w-full text-left p-4 rounded-xl neo-brutalism transition-all border-black ${isActive ? 'bg-black text-white' : 'bg-white text-black opacity-80'}`}>
                         <div className="flex justify-between items-center mb-1">
-                          <span className="font-heading text-[10px] truncate pr-2">{cycle.name}</span>
-                          <span className={`shrink-0 text-[7px] font-black uppercase px-1.5 py-0.5 rounded border ${isActive ? 'bg-[#ebca7a] text-black border-black animate-pulse' : isCompleted ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                          <span className="font-heading text-[12px] truncate pr-2">{cycle.name}</span>
+                          <span className={`shrink-0 text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${isActive ? 'bg-[#ebca7a] text-black border-black animate-pulse' : isCompleted ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
                             {isActive ? 'Activo' : isCompleted ? 'Completado' : 'Pausado'}
                           </span>
                         </div>
-                        <p className={`text-[8px] font-bold uppercase ${isActive ? 'text-gray-400' : 'text-gray-500 opacity-60'}`}>Inicio: {new Date(cycle.startDate).toLocaleDateString()}</p>
+                        <p className={`text-[10px] font-bold uppercase ${isActive ? 'text-gray-400' : 'text-gray-500 opacity-60'}`}>Inicio: {new Date(cycle.startDate).toLocaleDateString()}</p>
                         <div className="flex justify-end mt-1 font-heading text-xs">{completedLogs.length}/{totalWorkouts}</div>
                       </button>
                       {!isActive && (
-                        <button onClick={(e) => {e.stopPropagation(); cycle.isArchived ? onUnarchiveCycle(cycle.id) : onArchiveCycle(cycle.id);}} className="absolute -top-1 -right-1 w-6 h-6 flex items-center justify-center bg-white border-2 border-black rounded-full text-[10px] shadow-[1px_1px_0px_#000] active:translate-y-0.5 active:shadow-none">
+                        <button onClick={(e) => {e.stopPropagation(); cycle.isArchived ? onUnarchiveCycle(cycle.id) : onArchiveCycle(cycle.id);}} className="absolute -top-1 -right-1 w-6 h-6 flex items-center justify-center bg-white border-2 border-black rounded-full text-[12px] shadow-[1px_1px_0px_#000] active:translate-y-0.5 active:shadow-none">
                           {cycle.isArchived ? '📁' : '📦'}
                         </button>
                       )}
@@ -152,7 +152,7 @@ const Layout: React.FC<LayoutProps> = ({
               </div>
               
               <div className="pt-4 border-t-2 border-black/5">
-                <button onClick={() => {setShowArchived(!showArchived);}} className="w-full text-center text-[10px] font-black uppercase underline text-gray-500 mb-4">{showArchived ? 'Ver Activos' : 'Ver Archivados'}</button>
+                <button onClick={() => {setShowArchived(!showArchived);}} className="w-full text-center text-[12px] font-black uppercase underline text-gray-500 mb-4">{showArchived ? 'Ver Activos' : 'Ver Archivados'}</button>
                 <button onClick={() => {onCreateNewCycle(); setIsMenuOpen(false);}} className="w-full bg-black text-white p-4 rounded-xl font-heading text-xs border-2 border-black active:translate-y-1 shadow-[4px_4px_0px_#ebca7a]">+ NUEVO CIRCUITO</button>
               </div>
             </div>
@@ -174,7 +174,7 @@ const Layout: React.FC<LayoutProps> = ({
                >
                  <KettlebellLogo className={`w-8 h-8 transition-transform duration-500 ${isNavOpen ? 'rotate-180' : ''}`} kettlebellColor="white" boltColor="#ebca7a" />
                </button>
-               <p className="text-center font-heading text-[8px] mt-1 text-black bg-[#ebca7a] px-1 rounded border border-black uppercase font-black">Menu</p>
+               <p className="text-center font-heading text-[10px] mt-1 text-black bg-[#ebca7a] px-1 rounded border border-black uppercase font-black">Menu</p>
             </div>
 
             {navItems.map((item) => (
@@ -186,7 +186,7 @@ const Layout: React.FC<LayoutProps> = ({
                 <div className={`p-2 rounded-xl border-2 transition-all ${activeTab === item.id ? 'bg-[#ebca7a] border-black shadow-[2px_2px_0px_#000]' : 'bg-transparent border-transparent'}`}>
                    {item.icon}
                 </div>
-                <span className="text-[9px] font-black uppercase tracking-tighter">{item.label}</span>
+                <span className="text-[11px] font-black uppercase tracking-tighter">{item.label}</span>
               </button>
             ))}
           </nav>

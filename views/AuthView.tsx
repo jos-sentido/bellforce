@@ -56,7 +56,7 @@ const AuthView: React.FC = () => {
           <path d="M13 11L10 14.5H12.2L11.5 18.5L15 14.5H12.8L14.2 11Z" fill="white"/>
         </svg>
         <h1 className="font-heading text-5xl tracking-tighter leading-none mb-2 text-black">BELLFORCE</h1>
-        <p className="font-bold text-[10px] uppercase tracking-[0.2em] text-gray-500">Kettlebell Evolution System</p>
+        <p className="font-bold text-[12px] uppercase tracking-[0.2em] text-gray-500">Kettlebell Evolution System</p>
       </div>
 
       <div className="w-full max-w-sm">
@@ -64,14 +64,14 @@ const AuthView: React.FC = () => {
           <button
             type="button"
             onClick={() => { setMode('login'); setError(''); }}
-            className={`flex-1 p-3 text-[10px] font-black uppercase transition-colors ${mode === 'login' ? 'bg-black text-white' : 'bg-white text-black'}`}
+            className={`flex-1 p-3 text-[12px] font-black uppercase transition-colors ${mode === 'login' ? 'bg-black text-white' : 'bg-white text-black'}`}
           >
             Entrar
           </button>
           <button
             type="button"
             onClick={() => { setMode('register'); setError(''); }}
-            className={`flex-1 p-3 text-[10px] font-black uppercase transition-colors ${mode === 'register' ? 'bg-black text-white' : 'bg-white text-black'}`}
+            className={`flex-1 p-3 text-[12px] font-black uppercase transition-colors ${mode === 'register' ? 'bg-black text-white' : 'bg-white text-black'}`}
           >
             Registrarse
           </button>
@@ -80,7 +80,7 @@ const AuthView: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === 'register' && (
             <div className="space-y-1 animate-in slide-in-from-top-2">
-              <label className="text-[10px] font-black uppercase ml-1">Tu Nombre</label>
+              <label className="text-[12px] font-black uppercase ml-1">Tu Nombre</label>
               <input
                 type="text"
                 placeholder="Jos Alvarez"
@@ -92,7 +92,7 @@ const AuthView: React.FC = () => {
             </div>
           )}
           <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase ml-1">Email</label>
+            <label className="text-[12px] font-black uppercase ml-1">Email</label>
             <input
               type="email"
               placeholder="tu@email.com"
@@ -103,7 +103,7 @@ const AuthView: React.FC = () => {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase ml-1">Contraseña</label>
+            <label className="text-[12px] font-black uppercase ml-1">Contraseña</label>
             <input
               type="password"
               placeholder="••••••••"
@@ -112,10 +112,10 @@ const AuthView: React.FC = () => {
               onChange={e => setPassword(e.target.value)}
               disabled={loading}
             />
-            {mode === 'register' && <p className="text-[9px] text-gray-400 font-bold ml-1">Mínimo 6 caracteres.</p>}
+            {mode === 'register' && <p className="text-[11px] text-gray-400 font-bold ml-1">Mínimo 6 caracteres.</p>}
           </div>
 
-          {error && <p className="text-red-600 text-[10px] font-bold uppercase text-center animate-pulse">{error}</p>}
+          {error && <p className="text-red-600 text-[12px] font-bold uppercase text-center animate-pulse">{error}</p>}
 
           <button
             type="submit"
@@ -128,7 +128,7 @@ const AuthView: React.FC = () => {
 
         <div className="flex items-center gap-3 my-5">
           <div className="flex-1 h-0.5 bg-black/10" />
-          <span className="text-[9px] font-black uppercase text-gray-400">o</span>
+          <span className="text-[11px] font-black uppercase text-gray-400">o</span>
           <div className="flex-1 h-0.5 bg-black/10" />
         </div>
 

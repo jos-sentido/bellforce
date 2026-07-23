@@ -25,7 +25,7 @@ const TrainingHubView: React.FC<TrainingHubViewProps> = ({
     <div className="py-6 space-y-8 animate-in fade-in duration-500">
       <header>
         <h2 className="font-heading text-3xl leading-none text-black">¿QUÉ ENTRENAMOS HOY?</h2>
-        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-2">Selecciona tu modalidad de sesión</p>
+        <p className="text-[12px] font-bold text-gray-500 uppercase tracking-widest mt-2">Selecciona tu modalidad de sesión</p>
       </header>
 
       <div className="space-y-6">
@@ -38,7 +38,7 @@ const TrainingHubView: React.FC<TrainingHubViewProps> = ({
         >
           <div className="relative z-10">
             <div className="flex justify-between items-start mb-4">
-              <span className={`text-[9px] font-black uppercase px-2 py-1 rounded border ${
+              <span className={`text-[11px] font-black uppercase px-2 py-1 rounded border ${
                 activeCycle ? 'bg-[#ebca7a] text-black border-black' : 'bg-gray-200 text-gray-400 border-gray-300'
               }`}>
                 MODO CIRCUITO
@@ -55,10 +55,10 @@ const TrainingHubView: React.FC<TrainingHubViewProps> = ({
                 <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
                   <div className="h-full bg-[#77b074]" style={{ width: `${progressPercent}%` }} />
                 </div>
-                <p className="text-[10px] font-bold uppercase opacity-60">Continuar con la secuencia programada</p>
+                <p className="text-[12px] font-bold uppercase opacity-60">Continuar con la secuencia programada</p>
               </div>
             ) : (
-              <p className="text-[10px] font-bold uppercase underline">Pulsa para elegir una plantilla</p>
+              <p className="text-[12px] font-bold uppercase underline">Pulsa para elegir una plantilla</p>
             )}
           </div>
           {/* Decoración fondo */}
@@ -74,14 +74,14 @@ const TrainingHubView: React.FC<TrainingHubViewProps> = ({
         >
           <div className="relative z-10 text-black">
             <div className="flex justify-between items-start mb-4">
-              <span className="text-[9px] font-black uppercase px-2 py-1 rounded border-2 border-black bg-white">
+              <span className="text-[11px] font-black uppercase px-2 py-1 rounded border-2 border-black bg-white">
                 MODO LIBRE
               </span>
               <span className="text-2xl">💪</span>
             </div>
             
             <h3 className="font-heading text-2xl mb-2">ENTRENO INDIVIDUAL</h3>
-            <p className="text-[10px] font-bold uppercase opacity-80">Elige cualquier workout de la base de datos sin afectar tu circuito</p>
+            <p className="text-[12px] font-bold uppercase opacity-80">Elige cualquier workout de la base de datos sin afectar tu circuito</p>
           </div>
           {/* Decoración fondo */}
           <div className="absolute -right-2 -bottom-2 opacity-5 scale-150 text-black">

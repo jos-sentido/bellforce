@@ -101,20 +101,20 @@ const StatsView: React.FC<StatsViewProps> = ({ cycles = [], workouts = [] }) => 
     <div className="py-4 text-black animate-in fade-in duration-500">
       <header className="mb-6">
         <h2 className="font-heading text-3xl uppercase leading-none">Rendimiento</h2>
-        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Análisis Pro de Bellforce</p>
+        <p className="text-[12px] font-bold text-gray-500 uppercase tracking-widest mt-1">Análisis Pro de Bellforce</p>
       </header>
 
       {/* Main Tabs */}
       <div className="flex border-2 border-black rounded-xl overflow-hidden mb-8 neo-brutalism no-click">
         <button 
           onClick={() => setActiveTab('period')}
-          className={`flex-1 p-3 text-[10px] font-black uppercase transition-colors ${activeTab === 'period' ? 'bg-black text-white' : 'bg-white text-black'}`}
+          className={`flex-1 p-3 text-[12px] font-black uppercase transition-colors ${activeTab === 'period' ? 'bg-black text-white' : 'bg-white text-black'}`}
         >
           Por Periodo
         </button>
         <button 
           onClick={() => setActiveTab('circuits')}
-          className={`flex-1 p-3 text-[10px] font-black uppercase transition-colors ${activeTab === 'circuits' ? 'bg-black text-white' : 'bg-white text-black'}`}
+          className={`flex-1 p-3 text-[12px] font-black uppercase transition-colors ${activeTab === 'circuits' ? 'bg-black text-white' : 'bg-white text-black'}`}
         >
           Por Circuito
         </button>
@@ -128,7 +128,7 @@ const StatsView: React.FC<StatsViewProps> = ({ cycles = [], workouts = [] }) => 
               <button 
                 key={r}
                 onClick={() => setRange(r)}
-                className={`whitespace-nowrap px-4 py-2 rounded-full neo-brutalism text-[9px] font-bold uppercase transition-all ${
+                className={`whitespace-nowrap px-4 py-2 rounded-full neo-brutalism text-[11px] font-bold uppercase transition-all ${
                   range === r ? 'bg-black text-white' : 'bg-white text-black'
                 }`}
               >
@@ -139,11 +139,11 @@ const StatsView: React.FC<StatsViewProps> = ({ cycles = [], workouts = [] }) => 
 
           <div className="grid grid-cols-2 gap-4 mb-8">
             <div className="bg-white neo-brutalism p-4 rounded-2xl text-center">
-              <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Sesiones</p>
+              <p className="text-[11px] font-bold text-gray-400 uppercase mb-1">Sesiones</p>
               <p className="font-heading text-3xl">{filteredLogs.length}</p>
             </div>
             <div className="bg-white neo-brutalism p-4 rounded-2xl text-center">
-              <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Días activos</p>
+              <p className="text-[11px] font-bold text-gray-400 uppercase mb-1">Días activos</p>
               <p className="font-heading text-3xl">{new Set(filteredLogs.map(l => new Date(l.date).toDateString())).size}</p>
             </div>
           </div>
@@ -156,7 +156,7 @@ const StatsView: React.FC<StatsViewProps> = ({ cycles = [], workouts = [] }) => 
             {isLoading ? (
               <div className="flex flex-col items-center gap-2">
                 <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-[10px] font-black">ANALIZANDO PERIODO...</span>
+                <span className="text-[12px] font-black">ANALIZANDO PERIODO...</span>
               </div>
             ) : (
               <>
@@ -170,7 +170,7 @@ const StatsView: React.FC<StatsViewProps> = ({ cycles = [], workouts = [] }) => 
         <>
           {/* Selector de Circuito */}
           <div className="mb-6">
-            <label className="text-[9px] font-black uppercase text-gray-400 block mb-2">Seleccionar Circuito para analizar</label>
+            <label className="text-[11px] font-black uppercase text-gray-400 block mb-2">Seleccionar Circuito para analizar</label>
             <select 
               value={selectedCycleId}
               onChange={(e) => setSelectedCycleId(e.target.value)}
@@ -187,15 +187,15 @@ const StatsView: React.FC<StatsViewProps> = ({ cycles = [], workouts = [] }) => 
           {cycleStats && (
             <div className="grid grid-cols-3 gap-3 mb-8">
               <div className="bg-white neo-brutalism p-3 rounded-xl text-center">
-                <p className="text-[8px] font-bold text-gray-400 uppercase">Completado</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase">Completado</p>
                 <p className="font-heading text-xl">{cycleStats.completedCount}/{(Array.isArray(selectedCycle?.workoutIds) ? selectedCycle?.workoutIds.length : 15)}</p>
               </div>
               <div className="bg-white neo-brutalism p-3 rounded-xl text-center">
-                <p className="text-[8px] font-bold text-gray-400 uppercase">Carga Prom.</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase">Carga Prom.</p>
                 <p className="font-heading text-xl">{cycleStats.avgWeight}k</p>
               </div>
               <div className="bg-white neo-brutalism p-3 rounded-xl text-center">
-                <p className="text-[8px] font-bold text-gray-400 uppercase">Frecuencia</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase">Frecuencia</p>
                 <p className="font-heading text-xl">{cycleStats.avgFreq}d</p>
               </div>
             </div>
@@ -209,7 +209,7 @@ const StatsView: React.FC<StatsViewProps> = ({ cycles = [], workouts = [] }) => 
             {isLoading ? (
               <div className="flex flex-col items-center gap-2">
                 <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-[10px] font-black">COMPARANDO CON HISTORIAL...</span>
+                <span className="text-[12px] font-black">COMPARANDO CON HISTORIAL...</span>
               </div>
             ) : (
               <>
@@ -244,12 +244,12 @@ const StatsView: React.FC<StatsViewProps> = ({ cycles = [], workouts = [] }) => 
               return (
                 <div key={idx} className="bg-white p-4 rounded-xl border-2 border-black flex justify-between items-center neo-brutalism no-click">
                   <div>
-                    <p className="text-[10px] font-black uppercase leading-tight">{workout?.name || 'Workout'}</p>
-                    <p className="text-[8px] opacity-60 font-bold">{new Date(log.date).toLocaleDateString()} • {log.time}</p>
+                    <p className="text-[12px] font-black uppercase leading-tight">{workout?.name || 'Workout'}</p>
+                    <p className="text-[10px] opacity-60 font-bold">{new Date(log.date).toLocaleDateString()} • {log.time}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] font-black text-[#77b074] uppercase">✓ OK</p>
-                    <p className="text-[9px] font-bold">{workout?.weight || '-'}</p>
+                    <p className="text-[12px] font-black text-[#77b074] uppercase">✓ OK</p>
+                    <p className="text-[11px] font-bold">{workout?.weight || '-'}</p>
                   </div>
                 </div>
               );

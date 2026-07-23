@@ -111,7 +111,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="font-heading text-3xl leading-none">DATABASE</h2>
-          <p className="text-[8px] font-black uppercase text-gray-600 mt-1">{userRole === 'admin' ? 'Modo: Administrador Maestro' : 'Librería de Entrenamiento'}</p>
+          <p className="text-[10px] font-black uppercase text-gray-600 mt-1">{userRole === 'admin' ? 'Modo: Administrador Maestro' : 'Librería de Entrenamiento'}</p>
         </div>
         <button 
           onClick={() => {
@@ -130,8 +130,8 @@ const LibraryView: React.FC<LibraryViewProps> = ({
       </div>
 
       <div className="flex border-2 border-black rounded-xl overflow-hidden mb-6 neo-brutalism no-click">
-        <button onClick={() => setActiveTab('workouts')} className={`flex-1 p-3 text-[10px] font-black uppercase transition-colors ${activeTab === 'workouts' ? 'bg-black text-white' : 'bg-white text-black'}`}>Workouts</button>
-        <button onClick={() => setActiveTab('templates')} className={`flex-1 p-3 text-[10px] font-black uppercase transition-colors ${activeTab === 'templates' ? 'bg-black text-white' : 'bg-white text-black'}`}>Circuitos</button>
+        <button onClick={() => setActiveTab('workouts')} className={`flex-1 p-3 text-[12px] font-black uppercase transition-colors ${activeTab === 'workouts' ? 'bg-black text-white' : 'bg-white text-black'}`}>Workouts</button>
+        <button onClick={() => setActiveTab('templates')} className={`flex-1 p-3 text-[12px] font-black uppercase transition-colors ${activeTab === 'templates' ? 'bg-black text-white' : 'bg-white text-black'}`}>Circuitos</button>
       </div>
 
       <input 
@@ -158,7 +158,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                     <h4 className="font-heading text-lg leading-none">{w.name}</h4>
                     {w.isPublic ? <span title="Workout Global" className="text-sm">🛡️</span> : <span title="Workout Privado" className="text-sm">🔒</span>}
                   </div>
-                  <p className="text-[9px] font-bold uppercase flex items-center gap-1.5">
+                  <p className="text-[11px] font-bold uppercase flex items-center gap-1.5">
                     <span className={w.isPublic ? 'text-[#c6a256]' : 'text-gray-600'}>
                       {isMyPublic ? 'TU CONTENIDO PÚBLICO' : isMyPrivate ? 'TU ENTRENAMIENTO PRIVADO' : 'BELLFORCE GLOBAL'}
                     </span>
@@ -195,8 +195,8 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                   )}
                 </div>
               </div>
-              <p className="text-[9px] text-gray-600 line-clamp-1 mb-4 italic">{w.description}</p>
-              <button onClick={() => setPreviewW(w)} className="w-full neo-brutalism bg-white p-2 rounded-lg font-heading text-[10px] border-black hover:bg-gray-50">DETALLES</button>
+              <p className="text-[11px] text-gray-600 line-clamp-1 mb-4 italic">{w.description}</p>
+              <button onClick={() => setPreviewW(w)} className="w-full neo-brutalism bg-white p-2 rounded-lg font-heading text-[12px] border-black hover:bg-gray-50">DETALLES</button>
             </div>
           );
         }) : filteredT.map(t => (
@@ -207,7 +207,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                    <h4 className="font-heading text-lg leading-none">{t.name}</h4>
                    {t.isPublic && <span title="Circuito Global" className="text-sm">🛡️</span>}
                  </div>
-                 <p className="text-[9px] font-bold uppercase flex items-center gap-1.5">
+                 <p className="text-[11px] font-bold uppercase flex items-center gap-1.5">
                    <span className={t.isPublic ? 'text-[#c6a256]' : 'text-gray-600'}>
                      {t.isPublic ? (t.createdBy === userId ? 'TU CIRCUITO PÚBLICO' : 'BELLFORCE GLOBAL') : 'CIRCUITO PERSONAL'}
                    </span>
@@ -225,8 +225,8 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                </div>
             </div>
             <div className="flex gap-2">
-               <button onClick={() => setPreviewT(t)} className="flex-1 neo-brutalism bg-white p-3 rounded-xl font-heading text-[9px] uppercase border-black">Explorar</button>
-               <button onClick={() => onStartTemplate(t)} className="flex-1 neo-brutalism bg-black text-white p-3 rounded-xl font-heading text-[9px] uppercase border-black">Entrenar</button>
+               <button onClick={() => setPreviewT(t)} className="flex-1 neo-brutalism bg-white p-3 rounded-xl font-heading text-[11px] uppercase border-black">Explorar</button>
+               <button onClick={() => onStartTemplate(t)} className="flex-1 neo-brutalism bg-black text-white p-3 rounded-xl font-heading text-[11px] uppercase border-black">Entrenar</button>
             </div>
           </div>
         ))}
@@ -238,17 +238,17 @@ const LibraryView: React.FC<LibraryViewProps> = ({
           <div className="bg-white neo-brutalism p-6 rounded-2xl w-full max-w-sm border-black animate-in zoom-in-95 max-h-[80vh] flex flex-col shadow-2xl">
              <div className="mb-4">
                <h4 className="font-heading text-xl mb-1">{previewT.name}</h4>
-               <p className="text-[9px] font-black uppercase text-gray-500">{previewT.isPublic ? '🛡️ Circuito Bellforce Global' : 'Circuito Personal 🔒'}</p>
+               <p className="text-[11px] font-black uppercase text-gray-500">{previewT.isPublic ? '🛡️ Circuito Bellforce Global' : 'Circuito Personal 🔒'}</p>
              </div>
              <div className="flex-1 overflow-y-auto space-y-2 pr-2 mb-6 scrollbar-thin scrollbar-thumb-black">
                {previewT.workoutIds.map((id, idx) => {
                  const w = library.find(item => item.id === id);
                  return (
                    <div key={`${id}-${idx}`} className="p-3 border-2 border-black rounded-xl bg-gray-50 flex items-center gap-3">
-                     <span className="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-[9px] font-black shrink-0">{idx + 1}</span>
+                     <span className="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-[11px] font-black shrink-0">{idx + 1}</span>
                      <div className="flex-1">
-                       <p className="text-[10px] font-black uppercase leading-tight">{w?.name || 'Cargando...'}</p>
-                       <p className="text-[8px] text-gray-600 font-bold uppercase">{w?.weight} • {w?.type}</p>
+                       <p className="text-[12px] font-black uppercase leading-tight">{w?.name || 'Cargando...'}</p>
+                       <p className="text-[10px] text-gray-600 font-bold uppercase">{w?.weight} • {w?.type}</p>
                      </div>
                    </div>
                  );
@@ -268,14 +268,14 @@ const LibraryView: React.FC<LibraryViewProps> = ({
           <div className="bg-white neo-brutalism p-6 rounded-2xl w-full max-w-sm border-black animate-in zoom-in-95 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
              <div className="p-1">
                <h4 className="font-heading text-xl mb-1">{previewW.name}</h4>
-               <p className="text-[10px] font-black uppercase text-gray-500 mb-4">{previewW.isPublic ? '🛡️ Bellforce Global' : 'Personal 🔒'}</p>
+               <p className="text-[12px] font-black uppercase text-gray-500 mb-4">{previewW.isPublic ? '🛡️ Bellforce Global' : 'Personal 🔒'}</p>
              </div>
              
              <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-black space-y-6">
                 <section>
                   <div className="flex gap-2 mb-3">
-                    <span className="bg-[#ebca7a] text-black px-2 py-1 rounded text-[9px] font-bold border border-black">{previewW.weight}</span>
-                    <span className="bg-black text-white px-2 py-1 rounded text-[9px] font-bold border border-black">{previewW.type}</span>
+                    <span className="bg-[#ebca7a] text-black px-2 py-1 rounded text-[11px] font-bold border border-black">{previewW.weight}</span>
+                    <span className="bg-black text-white px-2 py-1 rounded text-[11px] font-bold border border-black">{previewW.type}</span>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-xl border-2 border-dashed border-black/10">
                     <p className="text-[11px] leading-relaxed whitespace-pre-wrap italic text-black">"{previewW.description}"</p>
@@ -290,7 +290,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                   
                   {weightHistory.length === 0 ? (
                     <div className="text-center py-6 bg-gray-50 rounded-xl border-2 border-black/5">
-                      <p className="text-[9px] font-black text-gray-400 uppercase">Sin historial en circuitos aún</p>
+                      <p className="text-[11px] font-black text-gray-400 uppercase">Sin historial en circuitos aún</p>
                     </div>
                   ) : (
                     <div className="space-y-3 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-black/10">
@@ -303,12 +303,12 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                           <div key={i} className="relative pl-8 flex items-center justify-between group">
                             <div className="absolute left-1.5 w-3.5 h-3.5 rounded-full bg-white border-2 border-black z-10" />
                             <div className="flex-1">
-                               <p className="text-[8px] font-black uppercase text-gray-500 leading-none">{new Date(h.date).toLocaleDateString()}</p>
-                               <p className="text-[10px] font-bold text-black truncate max-w-[150px]">{h.cycleName}</p>
+                               <p className="text-[10px] font-black uppercase text-gray-500 leading-none">{new Date(h.date).toLocaleDateString()}</p>
+                               <p className="text-[12px] font-bold text-black truncate max-w-[150px]">{h.cycleName}</p>
                             </div>
                             <div className="flex items-center gap-2">
                                {increased && <span className="text-green-600 animate-bounce">▲</span>}
-                               <span className={`px-2 py-1 rounded border-2 border-black font-heading text-[10px] shadow-[2px_2px_0px_#000] ${increased ? 'bg-[#77b074] text-white' : 'bg-white text-black'}`}>
+                               <span className={`px-2 py-1 rounded border-2 border-black font-heading text-[12px] shadow-[2px_2px_0px_#000] ${increased ? 'bg-[#77b074] text-white' : 'bg-white text-black'}`}>
                                  {h.weight}
                                </span>
                             </div>
@@ -341,12 +341,12 @@ const LibraryView: React.FC<LibraryViewProps> = ({
            <div className="bg-white neo-brutalism p-6 rounded-2xl w-full max-w-sm border-black animate-in zoom-in-95 max-h-[90vh] flex flex-col shadow-2xl space-y-4">
               <h3 className="font-heading text-xl">{editingT.id ? 'EDITAR' : 'NUEVO'} CIRCUITO</h3>
               <div className="space-y-1">
-                 <label className="text-[9px] font-black text-gray-700 uppercase ml-1">Nombre del Circuito</label>
+                 <label className="text-[11px] font-black text-gray-700 uppercase ml-1">Nombre del Circuito</label>
                  <input type="text" className="w-full p-3 neo-brutalism rounded-xl text-sm focus:outline-none border-black bg-white text-black font-bold" placeholder="ej: Fusion Circuit X" value={formT.name} onChange={e => setFormT({...formT, name: e.target.value})} />
               </div>
               {userRole === 'admin' && (
                 <button type="button" onClick={() => setFormT({...formT, isPublic: !formT.isPublic})} className={`w-full p-3 rounded-xl border-2 border-black flex items-center justify-between transition-colors ${formT.isPublic ? 'bg-black text-white shadow-[2px_2px_0px_#ebca7a]' : 'bg-white text-black'}`}>
-                  <span className="text-[9px] font-black uppercase">Visibilidad Global (Admin)</span>
+                  <span className="text-[11px] font-black uppercase">Visibilidad Global (Admin)</span>
                   <div className={`w-8 h-4 rounded-full border-2 border-black relative transition-colors ${formT.isPublic ? 'bg-[#ebca7a]' : 'bg-gray-200'}`}>
                     <div className={`absolute top-0.5 w-2 h-2 rounded-full bg-black transition-all ${formT.isPublic ? 'right-1' : 'left-1'}`} />
                   </div>
@@ -354,15 +354,15 @@ const LibraryView: React.FC<LibraryViewProps> = ({
               )}
               <div className="flex-1 overflow-hidden flex flex-col space-y-2">
                  <div className="flex justify-between items-end border-b-2 border-black pb-1">
-                   <label className="text-[9px] font-black text-gray-700 uppercase">Secuencia ({formT.workoutIds.length})</label>
+                   <label className="text-[11px] font-black text-gray-700 uppercase">Secuencia ({formT.workoutIds.length})</label>
                  </div>
                  <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-thin scrollbar-thumb-black bg-gray-50 rounded-xl p-2 border-2 border-black min-h-[150px]">
                     {formT.workoutIds.map((wid, idx) => {
                       const w = library.find(item => item.id === wid);
                       return (
                         <div key={`${wid}-${idx}`} className="flex items-center gap-2 bg-white p-2 rounded-lg border border-black/20 shadow-sm">
-                           <span className="w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-[8px] font-black shrink-0">{idx+1}</span>
-                           <span className="flex-1 text-[9px] font-bold uppercase truncate text-black">{w?.name || 'Cargando...'}</span>
+                           <span className="w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0">{idx+1}</span>
+                           <span className="flex-1 text-[11px] font-bold uppercase truncate text-black">{w?.name || 'Cargando...'}</span>
                            <div className="flex gap-1">
                               <button onClick={() => {
                                   const ids = [...formT.workoutIds];
@@ -404,9 +404,9 @@ const LibraryView: React.FC<LibraryViewProps> = ({
              <div className="space-y-3 mb-4">
                 <input type="text" placeholder="Buscar workout..." className="w-full p-3 neo-brutalism rounded-xl text-xs focus:outline-none border-black bg-white text-black font-bold" value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} autoFocus />
                 <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-                   <button onClick={() => setPickerTypeFilter(null)} className={`px-3 py-1.5 rounded-full border-2 border-black text-[8px] font-black uppercase whitespace-nowrap transition-colors ${!pickerTypeFilter ? 'bg-black text-white' : 'bg-white text-black'}`}>Todos</button>
+                   <button onClick={() => setPickerTypeFilter(null)} className={`px-3 py-1.5 rounded-full border-2 border-black text-[10px] font-black uppercase whitespace-nowrap transition-colors ${!pickerTypeFilter ? 'bg-black text-white' : 'bg-white text-black'}`}>Todos</button>
                    {workoutTypes.map(type => (
-                     <button key={type} onClick={() => setPickerTypeFilter(type)} className={`px-3 py-1.5 rounded-full border-2 border-black text-[8px] font-black uppercase whitespace-nowrap transition-colors ${pickerTypeFilter === type ? 'bg-black text-white' : 'bg-white text-black'}`}>{type}</button>
+                     <button key={type} onClick={() => setPickerTypeFilter(type)} className={`px-3 py-1.5 rounded-full border-2 border-black text-[10px] font-black uppercase whitespace-nowrap transition-colors ${pickerTypeFilter === type ? 'bg-black text-white' : 'bg-white text-black'}`}>{type}</button>
                    ))}
                 </div>
              </div>
@@ -416,8 +416,8 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                   <button key={w.id} onClick={() => setFormT({...formT, workoutIds: [...formT.workoutIds, w.id]})} className="w-full text-left p-3 bg-white border border-black/10 rounded-lg hover:bg-[#ebca7a]/10 transition-colors flex justify-between items-center group relative overflow-hidden">
                     {formT.workoutIds.includes(w.id) && <div className="absolute top-0 right-0 bg-[#ebca7a] px-1.5 py-0.5 border-l border-b border-black text-[6px] font-black uppercase">En secuencia</div>}
                     <div>
-                      <h4 className="font-heading text-[10px] text-black leading-tight">{w.name}</h4>
-                      <p className="text-[8px] font-bold text-gray-500 uppercase">{w.weight} • {w.type}</p>
+                      <h4 className="font-heading text-[12px] text-black leading-tight">{w.name}</h4>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase">{w.weight} • {w.type}</p>
                     </div>
                     <div className="w-6 h-6 rounded-full border border-black bg-white flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors">
                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4"></path></svg>
@@ -439,12 +439,12 @@ const LibraryView: React.FC<LibraryViewProps> = ({
           <div className="bg-white neo-brutalism p-6 rounded-2xl w-full max-w-sm space-y-4 border-black animate-in zoom-in-95 shadow-2xl">
              <div className="flex justify-between items-start">
                <h3 className="font-heading text-xl">{editingW.id ? 'EDITAR' : 'NUEVO'} WORKOUT</h3>
-               {formW.isPublic && <span className="bg-[#ebca7a] text-black text-[7px] font-black uppercase px-2 py-1 rounded border border-black">Global 🛡️</span>}
+               {formW.isPublic && <span className="bg-[#ebca7a] text-black text-[9px] font-black uppercase px-2 py-1 rounded border border-black">Global 🛡️</span>}
              </div>
              {userRole === 'admin' && (
                <div className="bg-gray-50 p-3 rounded-xl border-2 border-black">
                  <button type="button" onClick={() => setFormW({...formW, isPublic: !formW.isPublic})} className={`w-full p-2 rounded-lg border-2 border-black flex items-center justify-between transition-colors ${formW.isPublic ? 'bg-black text-white shadow-[2px_2px_0px_#ebca7a]' : 'bg-white text-black'}`}>
-                   <span className="text-[9px] font-black uppercase">Visibilidad Pública</span>
+                   <span className="text-[11px] font-black uppercase">Visibilidad Pública</span>
                    <div className={`w-8 h-4 rounded-full border-2 border-black relative transition-colors ${formW.isPublic ? 'bg-[#ebca7a]' : 'bg-gray-200'}`}>
                       <div className={`absolute top-0.5 w-2 h-2 rounded-full bg-black transition-all ${formW.isPublic ? 'right-1' : 'left-1'}`} />
                    </div>
@@ -452,21 +452,21 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                </div>
              )}
              <div className="space-y-1">
-                <label className="text-[9px] font-black text-gray-700 uppercase ml-1">Nombre</label>
+                <label className="text-[11px] font-black text-gray-700 uppercase ml-1">Nombre</label>
                 <input type="text" className="w-full p-3 neo-brutalism rounded-lg text-sm focus:outline-none border-black bg-white text-black font-bold" value={formW.name} onChange={e => setFormW({...formW, name: e.target.value})} />
              </div>
              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[9px] font-black text-gray-700 uppercase ml-1">Peso</label>
+                  <label className="text-[11px] font-black text-gray-700 uppercase ml-1">Peso</label>
                   <input type="text" className="w-full p-3 neo-brutalism rounded-lg text-sm focus:outline-none border-black bg-white text-black font-bold" value={formW.weight} onChange={e => setFormW({...formW, weight: e.target.value})} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-black text-gray-700 uppercase ml-1">Tipo</label>
+                  <label className="text-[11px] font-black text-gray-700 uppercase ml-1">Tipo</label>
                   <input type="text" className="w-full p-3 neo-brutalism rounded-lg text-sm focus:outline-none border-black bg-white text-black font-bold" value={formW.type} onChange={e => setFormW({...formW, type: e.target.value})} />
                 </div>
              </div>
              <div className="space-y-1">
-                <label className="text-[9px] font-black text-gray-700 uppercase ml-1">Descripción</label>
+                <label className="text-[11px] font-black text-gray-700 uppercase ml-1">Descripción</label>
                 <textarea placeholder="Ejercicios y reps..." className="w-full p-3 neo-brutalism rounded-lg text-sm min-h-[100px] border-black resize-none bg-white text-black font-bold" value={formW.description} onChange={e => setFormW({...formW, description: e.target.value})} />
              </div>
              <div className="flex gap-3 pt-2">

@@ -551,13 +551,13 @@ const App: React.FC = () => {
                   <button key={t.id} onClick={() => handleStartTemplate(t)} className="w-full text-left p-4 border-2 border-black rounded-xl hover:bg-[#ebca7a]/20 transition-all flex justify-between items-center group">
                     <div>
                       <h4 className="font-heading text-xs uppercase">{t.name}</h4>
-                      <p className="text-[8px] font-bold text-gray-500 uppercase">{t.workoutIds.length} Sesiones</p>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase">{t.workoutIds.length} Sesiones</p>
                     </div>
                     <svg className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7"></path></svg>
                   </button>
                 ))}
               </div>
-              <button onClick={() => { setShowTemplatePicker(false); setActiveTab('library'); }} className="w-full bg-black text-white p-4 rounded-xl font-heading text-[10px] uppercase tracking-widest">Gestionar Plantillas</button>
+              <button onClick={() => { setShowTemplatePicker(false); setActiveTab('library'); }} className="w-full bg-black text-white p-4 rounded-xl font-heading text-[12px] uppercase tracking-widest">Gestionar Plantillas</button>
            </div>
         </div>
       )}

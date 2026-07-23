@@ -74,11 +74,11 @@ const HomeView: React.FC<HomeViewProps> = ({
             <h3 className="font-heading text-lg mb-3 text-black">Siguiente Workout</h3>
             <button onClick={() => onSelectWorkout(nextWorkout)} className="w-full text-left neo-brutalism bg-[#ebca7a] p-5 rounded-2xl flex justify-between items-center group border-black shadow-[6px_6px_0px_#000]">
               <div className="text-black">
-                <p className="text-[10px] font-bold uppercase mb-1 opacity-80">Sesión #{nextWorkoutIndex + 1}</p>
+                <p className="text-[12px] font-bold uppercase mb-1 opacity-80">Sesión #{nextWorkoutIndex + 1}</p>
                 <h4 className="font-heading text-xl leading-tight mb-2">{nextWorkout.name}</h4>
                 <div className="flex gap-2">
-                   <span className="bg-black text-white text-[8px] px-2 py-0.5 rounded-md font-bold uppercase">{nextWorkout.weight}</span>
-                   <span className="bg-black text-white text-[8px] px-2 py-0.5 rounded-md font-bold uppercase">{nextWorkout.duration}</span>
+                   <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-md font-bold uppercase">{nextWorkout.weight}</span>
+                   <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-md font-bold uppercase">{nextWorkout.duration}</span>
                 </div>
               </div>
               <div className="bg-black text-white p-2 rounded-full group-hover:scale-110 transition-transform"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7"></path></svg></div>
@@ -90,7 +90,7 @@ const HomeView: React.FC<HomeViewProps> = ({
       <div className="space-y-4">
         <div className="flex justify-between items-center mb-2 px-1">
            <h3 className="font-heading text-lg text-black">Secuencia</h3>
-           {!isCompleted && <button onClick={onManageCircuit} className="bg-black text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase tracking-tighter neo-brutalism border-black">Editar Orden</button>}
+           {!isCompleted && <button onClick={onManageCircuit} className="bg-black text-white px-3 py-1.5 rounded-lg font-bold text-[11px] uppercase tracking-tighter neo-brutalism border-black">Editar Orden</button>}
         </div>
         
         {workouts.map((workout, idx) => {
@@ -100,7 +100,7 @@ const HomeView: React.FC<HomeViewProps> = ({
           return (
             <div key={`${workout.id}-${idx}`} onClick={() => onSelectWorkout(workout)} className={`neo-brutalism p-4 rounded-xl flex items-center gap-4 border-black transition-all cursor-pointer ${isDone ? 'bg-[#c1e1c1]' : isNext ? 'bg-white border-dashed' : 'bg-white'}`}>
               <div className={`w-8 h-8 rounded-full border-2 border-black flex items-center justify-center font-heading text-xs ${isDone ? 'bg-black text-white' : 'bg-white text-black'}`}>{idx + 1}</div>
-              <div className="flex-1 text-black"><h5 className="font-heading text-sm leading-none mb-1">{workout.name}</h5><p className="text-[8px] text-gray-500 font-bold uppercase">{isDone ? `COMPLETADO` : workout.type}</p></div>
+              <div className="flex-1 text-black"><h5 className="font-heading text-sm leading-none mb-1">{workout.name}</h5><p className="text-[10px] text-gray-500 font-bold uppercase">{isDone ? `COMPLETADO` : workout.type}</p></div>
               {isDone && <svg className="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path></svg>}
             </div>
           );

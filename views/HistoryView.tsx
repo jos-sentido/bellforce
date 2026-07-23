@@ -26,7 +26,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
               <div className="p-4 flex justify-between items-center cursor-pointer" onClick={() => setExpandedCycleId(expandedCycleId === 'standalone' ? null : 'standalone')}>
                 <div className="flex-1">
                   <h4 className="font-heading text-lg">Sesiones Libres</h4>
-                  <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Total: {standaloneCycle.logs.length} entrenamientos registrados</p>
+                  <p className="text-[12px] font-bold text-gray-600 uppercase tracking-widest">Total: {standaloneCycle.logs.length} entrenamientos registrados</p>
                 </div>
                 <div className={`transition-transform ${expandedCycleId === 'standalone' ? 'rotate-180' : ''}`}><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path></svg></div>
               </div>
@@ -39,7 +39,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
                         <div 
                           key={idx} 
                           onClick={() => onViewLog?.(w, log)}
-                          className="bg-white p-4 rounded-xl border-2 border-black/10 text-[10px] shadow-sm active:translate-y-1 transition-all cursor-pointer group hover:border-black"
+                          className="bg-white p-4 rounded-xl border-2 border-black/10 text-[12px] shadow-sm active:translate-y-1 transition-all cursor-pointer group hover:border-black"
                         >
                            <div className="flex justify-between font-black uppercase mb-1">
                                <span className="group-hover:text-[#c6a256] transition-colors">{w.name}</span>
@@ -48,10 +48,10 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
                            <p className="italic text-gray-600 line-clamp-1 opacity-70 mb-2">{log.comments || 'Sin comentarios adicionales'}</p>
                            <div className="flex justify-between items-center mt-2">
                              <div className="flex gap-2">
-                               {log.aiAnalysisText && <span className="text-[7px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md font-black uppercase border border-blue-200">IA ANALYZED</span>}
-                               {log.statsImages && log.statsImages.length > 0 && <span className="text-[7px] bg-gray-100 text-gray-800 px-2 py-0.5 rounded-md font-black uppercase border border-gray-200">📸 {log.statsImages.length} FOTOS</span>}
+                               {log.aiAnalysisText && <span className="text-[9px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md font-black uppercase border border-blue-200">IA ANALYZED</span>}
+                               {log.statsImages && log.statsImages.length > 0 && <span className="text-[9px] bg-gray-100 text-gray-800 px-2 py-0.5 rounded-md font-black uppercase border border-gray-200">📸 {log.statsImages.length} FOTOS</span>}
                              </div>
-                             <span className="text-[9px] font-black uppercase underline group-hover:no-underline">Ver detalles →</span>
+                             <span className="text-[11px] font-black uppercase underline group-hover:no-underline">Ver detalles →</span>
                            </div>
                         </div>
                       );
@@ -66,7 +66,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
       <h3 className="font-heading text-xl mb-4 uppercase opacity-60 tracking-tighter">Circuitos Estructurados</h3>
       {completedCycles.length === 0 ? (
         <div className="text-center py-12 neo-brutalism bg-white/50 rounded-2xl border-dashed border-black/20">
-          <p className="font-bold uppercase text-[10px] text-gray-400 tracking-widest">Sin circuitos completados aún</p>
+          <p className="font-bold uppercase text-[12px] text-gray-400 tracking-widest">Sin circuitos completados aún</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -75,7 +75,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
               <div className="p-4 flex justify-between items-center cursor-pointer" onClick={() => setExpandedCycleId(expandedCycleId === cycle.id ? null : cycle.id)}>
                 <div className="flex-1">
                   <h4 className="font-heading text-lg">{cycle.name}</h4>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">Finalizado: {new Date(cycle.endDate!).toLocaleDateString()}</p>
+                  <p className="text-[12px] font-bold text-gray-400 uppercase">Finalizado: {new Date(cycle.endDate!).toLocaleDateString()}</p>
                 </div>
                 <div className={`transition-transform ${expandedCycleId === cycle.id ? 'rotate-180' : ''}`}><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path></svg></div>
               </div>
@@ -90,7 +90,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
                         <div 
                           key={idx} 
                           onClick={() => onViewLog?.(w, log)}
-                          className="bg-white p-3 rounded-lg border border-black/10 text-[10px] hover:border-black cursor-pointer group active:scale-[0.98] transition-all"
+                          className="bg-white p-3 rounded-lg border border-black/10 text-[12px] hover:border-black cursor-pointer group active:scale-[0.98] transition-all"
                         >
                            <div className="flex justify-between font-black uppercase mb-1">
                              <span className="group-hover:text-[#c6a256]">{w.name}</span>

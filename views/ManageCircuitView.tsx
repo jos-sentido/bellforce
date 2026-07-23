@@ -42,7 +42,7 @@ const ManageCircuitView: React.FC<ManageCircuitViewProps> = ({
         </button>
         <button 
           onClick={() => setShowAddModal(true)}
-          className="bg-black text-white px-4 py-2 rounded-xl font-heading text-[10px] tracking-tight neo-brutalism active:translate-y-1 active:shadow-none"
+          className="bg-black text-white px-4 py-2 rounded-xl font-heading text-[12px] tracking-tight neo-brutalism active:translate-y-1 active:shadow-none"
         >
           + AÑADIR WORKOUT
         </button>
@@ -50,9 +50,9 @@ const ManageCircuitView: React.FC<ManageCircuitViewProps> = ({
 
       <div className="mb-6">
         <h2 className="font-heading text-2xl mb-1">GESTIÓN DE SECUENCIA</h2>
-        <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">Organiza el orden de tus workouts en el circuito</p>
+        <p className="text-[12px] font-bold text-gray-500 uppercase mb-2">Organiza el orden de tus workouts en el circuito</p>
         <div className="inline-block bg-black text-[#ebca7a] px-3 py-1 rounded-md border-2 border-black shadow-[2px_2px_0px_#000]">
-          <p className="font-heading text-[10px] tracking-widest leading-none">TOTAL: {activeWorkouts.length} WORKOUTS</p>
+          <p className="font-heading text-[12px] tracking-widest leading-none">TOTAL: {activeWorkouts.length} WORKOUTS</p>
         </div>
       </div>
 
@@ -84,14 +84,14 @@ const ManageCircuitView: React.FC<ManageCircuitViewProps> = ({
                   className="w-full text-left p-3 border-2 border-black rounded-xl hover:bg-[#ebca7a]/20 transition-colors flex justify-between items-center group bg-white text-black"
                 >
                   <div>
-                    <h4 className="font-heading text-[10px] leading-tight">{w.name}</h4>
-                    <p className="text-[8px] font-bold text-gray-600 uppercase">{w.weight} • {w.type}</p>
+                    <h4 className="font-heading text-[12px] leading-tight">{w.name}</h4>
+                    <p className="text-[10px] font-bold text-gray-600 uppercase">{w.weight} • {w.type}</p>
                   </div>
                   <svg className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
                 </button>
               ))}
               {filteredLibrary.length === 0 && (
-                <p className="text-center text-[10px] py-10 text-gray-500 font-bold uppercase">No se encontraron workouts</p>
+                <p className="text-center text-[12px] py-10 text-gray-500 font-bold uppercase">No se encontraron workouts</p>
               )}
             </div>
           </div>
@@ -101,13 +101,13 @@ const ManageCircuitView: React.FC<ManageCircuitViewProps> = ({
       <div className="space-y-3 pb-32">
         {activeWorkouts.map((w, idx) => (
           <div key={`${w.id}-${idx}`} className="neo-brutalism bg-white p-3 rounded-xl flex items-center gap-3 animate-in slide-in-from-left-2 duration-200" style={{ animationDelay: `${idx * 50}ms` }}>
-            <div className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center font-heading text-[10px] shrink-0">
+            <div className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center font-heading text-[12px] shrink-0">
               {idx + 1}
             </div>
             
             <div className="flex-1 overflow-hidden">
                <h4 className="font-heading text-xs truncate text-black">{w.name}</h4>
-               <p className="text-[8px] text-gray-600 font-bold uppercase">{w.type}</p>
+               <p className="text-[10px] text-gray-600 font-bold uppercase">{w.type}</p>
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
@@ -141,7 +141,7 @@ const ManageCircuitView: React.FC<ManageCircuitViewProps> = ({
           <div className="p-20 text-center opacity-40">
              <svg className="w-12 h-12 mx-auto mb-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
              <p className="font-bold text-xs uppercase text-black">No hay workouts en la secuencia</p>
-             <button onClick={() => setShowAddModal(true)} className="mt-4 text-[10px] font-bold underline text-black">Añadir mi primer ejercicio</button>
+             <button onClick={() => setShowAddModal(true)} className="mt-4 text-[12px] font-bold underline text-black">Añadir mi primer ejercicio</button>
           </div>
         )}
       </div>

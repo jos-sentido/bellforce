@@ -34,7 +34,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onLogout, onExport, o
     <div className="py-4 text-black animate-in fade-in duration-500 space-y-8">
       <header>
         <h2 className="font-heading text-3xl uppercase leading-none">Ajustes</h2>
-        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Perfil y datos</p>
+        <p className="text-[12px] font-bold text-gray-500 uppercase tracking-widest mt-1">Perfil y datos</p>
       </header>
 
       {/* PERFIL */}
@@ -45,8 +45,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onLogout, onExport, o
           </div>
           <div className="flex-1 overflow-hidden">
             <h3 className="font-heading text-lg leading-none truncate">{user.name}</h3>
-            <p className="text-[10px] font-bold text-gray-500 truncate">{user.email}</p>
-            <span className={`inline-block mt-1 text-[7px] font-black uppercase px-2 py-0.5 rounded border-2 ${user.role === 'admin' ? 'bg-black text-[#ebca7a] border-black' : 'bg-gray-100 text-gray-600 border-gray-300'}`}>
+            <p className="text-[12px] font-bold text-gray-500 truncate">{user.email}</p>
+            <span className={`inline-block mt-1 text-[9px] font-black uppercase px-2 py-0.5 rounded border-2 ${user.role === 'admin' ? 'bg-black text-[#ebca7a] border-black' : 'bg-gray-100 text-gray-600 border-gray-300'}`}>
               {user.role === 'admin' ? '🛡️ Administrador' : 'Usuario'}
             </span>
           </div>
@@ -56,7 +56,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onLogout, onExport, o
       {/* COPIA DE SEGURIDAD */}
       <section className="space-y-3">
         <h3 className="font-heading text-sm uppercase">Copia de seguridad</h3>
-        <p className="text-[10px] font-bold text-gray-500 leading-relaxed">
+        <p className="text-[12px] font-bold text-gray-500 leading-relaxed">
           Tus datos viven en este dispositivo. Exporta una copia antes de borrar la caché o cambiar de navegador,
           y restáurala aquí cuando la necesites.
         </p>
@@ -78,8 +78,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onLogout, onExport, o
         </button>
         <input ref={fileInputRef} type="file" accept="application/json,.json" className="hidden" onChange={handleFile} />
 
-        {importStatus === 'ok' && <p className="text-[10px] font-black uppercase text-[#77b074] text-center animate-in fade-in">✓ Copia restaurada correctamente</p>}
-        {importStatus === 'error' && <p className="text-[10px] font-black uppercase text-red-600 text-center animate-in fade-in">✗ Archivo inválido</p>}
+        {importStatus === 'ok' && <p className="text-[12px] font-black uppercase text-[#77b074] text-center animate-in fade-in">✓ Copia restaurada correctamente</p>}
+        {importStatus === 'error' && <p className="text-[12px] font-black uppercase text-red-600 text-center animate-in fade-in">✗ Archivo inválido</p>}
       </section>
 
       {/* SESIÓN */}
@@ -92,7 +92,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onLogout, onExport, o
         </button>
       </section>
 
-      <p className="text-center text-[9px] font-bold text-gray-400 uppercase tracking-widest">Bellforce · Kettlebell Evolution System</p>
+      <p className="text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Bellforce · Kettlebell Evolution System</p>
     </div>
   );
 };
