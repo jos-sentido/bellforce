@@ -1,0 +1,73 @@
+rules_version = '2';
+
+// ============================================================================
+// BELLFORCE · Reglas de seguridad de Firestore
+// ----------------------------------------------------------------------------
+// Modelo de datos:
+//   profiles/{uid}                      -> perfil del usuario
+//   workouts/{id}                       -> ejercicios (públicos o del autor)
+//   templates/{id}                      -> plantillas de circuito
+//   cycles/{id}                         -> ciclos de cada usuario
+//   cycles/{id}/logs/{logId}            -> registros de sesión (subcolección)
+// ============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/profiles/$(request.auth.uid))
+        && get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ---- Perfiles ----
+    // Cada quien crea/edita su propio perfil, PERO no puede auto-asignarse rol.
+    // Todos entran como 'user'. La promoción a 'admin' se hace fuera de banda
+    // (consola / CLI con permisos de proyecto), no desde el cliente.
+    match /profiles/{uid} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == uid
+        && request.resource.data.role == 'user';
+      allow update: if isSignedIn() && request.auth.uid == uid
+        && request.resource.data.role == resource.data.role;
+      allow delete: if false;
+    }
+
+    // ---- Workouts ----
+    match /workouts/{id} {
+      allow read: if isSignedIn()
+        && (resource.data.isPublic == true || resource.data.createdBy == request.auth.uid);
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && (request.resource.data.isPublic == false || isAdmin());
+      allow update, delete: if isSignedIn()
+        && (resource.data.createdBy == request.auth.uid || isAdmin());
+    }
+
+    // ---- Plantillas ----
+    match /templates/{id} {
+      allow read: if isSignedIn()
+        && (resource.data.isPublic == true || resource.data.createdBy == request.auth.uid);
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && (request.resource.data.isPublic == false || isAdmin());
+      allow update, delete: if isSignedIn()
+        && (resource.data.createdBy == request.auth.uid || isAdmin());
+    }
+
+    // ---- Ciclos + logs ----
+    match /cycles/{cycleId} {
+      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+
+      match /logs/{logId} {
+        allow read, write: if isSignedIn()
+          && get(/databases/$(database)/documents/cycles/$(cycleId)).data.userId == request.auth.uid;
+      }
+    }
+  }
+}
