@@ -8,7 +8,7 @@ interface LibraryViewProps {
   library: Workout[];
   templates: CircuitTemplate[];
   cycles: CircuitCycle[];
-  onAddToLibrary: (w: Omit<Workout, 'id'>) => Workout;
+  onAddToLibrary: (w: Omit<Workout, 'id'>) => void;
   onUpdateWorkout: (w: Workout) => void;
   onDeleteWorkout: (id: string) => void;
   onSaveTemplate: (t: CircuitTemplate) => void;

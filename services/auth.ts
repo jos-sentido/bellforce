@@ -9,21 +9,36 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from './firebase';
-import { User } from '../types';
+import { User, UserRole } from '../types';
 
-// Garantiza que exista el documento de perfil del usuario. Todos entran como
-// 'user'; la promoción a 'admin' se hace desde la consola/CLI (ver reglas).
+// Correos autorizados como administradores (debe coincidir con ownerEmails()
+// en firestore.rules). El rol lo valida el servidor vía reglas.
+const OWNER_EMAILS = ['alvarezcruzjoseantonio@gmail.com'];
+
+function roleForEmail(email: string | null | undefined): UserRole {
+  return email && OWNER_EMAILS.includes(email.toLowerCase()) ? 'admin' : 'user';
+}
+
+// Garantiza que exista el documento de perfil del usuario y que el owner
+// quede como admin (auto-promoción permitida por reglas solo para OWNER_EMAILS).
 async function ensureProfile(fbUser: FirebaseUser, nameOverride?: string): Promise<User> {
   const ref = doc(db, 'profiles', fbUser.uid);
   const snap = await getDoc(ref);
+  const desiredRole = roleForEmail(fbUser.email);
 
   if (snap.exists()) {
     const data = snap.data();
+    let role: UserRole = data.role === 'admin' ? 'admin' : 'user';
+    // Promueve al owner si su perfil aún no es admin.
+    if (desiredRole === 'admin' && role !== 'admin') {
+      await setDoc(ref, { role: 'admin' }, { merge: true });
+      role = 'admin';
+    }
     return {
       id: fbUser.uid,
       name: data.name || fbUser.displayName || '',
       email: data.email || fbUser.email || '',
-      role: data.role === 'admin' ? 'admin' : 'user',
+      role,
       joinedDate: data.joinedDate || undefined,
     };
   }
@@ -31,12 +46,12 @@ async function ensureProfile(fbUser: FirebaseUser, nameOverride?: string): Promi
   const profile = {
     name: nameOverride || fbUser.displayName || (fbUser.email?.split('@')[0] ?? ''),
     email: fbUser.email || '',
-    role: 'user' as const,
+    role: desiredRole,
     joinedDate: new Date().toISOString(),
     createdAt: serverTimestamp(),
   };
   await setDoc(ref, profile);
-  return { id: fbUser.uid, name: profile.name, email: profile.email, role: 'user', joinedDate: profile.joinedDate };
+  return { id: fbUser.uid, name: profile.name, email: profile.email, role: desiredRole, joinedDate: profile.joinedDate };
 }
 
 export async function registerWithEmail(name: string, email: string, password: string): Promise<User> {

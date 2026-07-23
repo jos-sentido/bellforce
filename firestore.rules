@@ -24,6 +24,16 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // Correos autorizados a ser administradores (owner de la app).
+    // Solo estos pueden tener role='admin' en su perfil; el resto queda en 'user'.
+    function ownerEmails() {
+      return ['alvarezcruzjoseantonio@gmail.com'];
+    }
+
+    function isOwner() {
+      return isSignedIn() && request.auth.token.email in ownerEmails();
+    }
+
     // ---- Perfiles ----
     // Cada quien crea/edita su propio perfil, PERO no puede auto-asignarse rol.
     // Todos entran como 'user'. La promoción a 'admin' se hace fuera de banda
@@ -31,9 +41,9 @@ service cloud.firestore {
     match /profiles/{uid} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == uid
-        && request.resource.data.role == 'user';
+        && (request.resource.data.role == 'user' || isOwner());
       allow update: if isSignedIn() && request.auth.uid == uid
-        && request.resource.data.role == resource.data.role;
+        && (request.resource.data.role == resource.data.role || isOwner());
       allow delete: if false;
     }
 
