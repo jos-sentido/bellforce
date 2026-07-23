@@ -202,31 +202,49 @@ const Layout: React.FC<LayoutProps> = ({
 
       {isUserLoggedIn && (
         <>
-          <nav className={`fixed bottom-0 left-0 right-0 bg-white border-t-4 border-black p-4 z-[1000] flex justify-around items-center transition-transform duration-300 ${isNavOpen ? 'translate-y-0' : 'translate-y-[calc(100%-10px)]'}`}>
-            <div className="absolute -top-16 left-6">
-               <button 
-                onClick={() => setIsNavOpen(!isNavOpen)}
-                className="w-14 h-14 neo-brutalism bg-black text-white rounded-full flex items-center justify-center shadow-[4px_4px_0px_#ebca7a] active:scale-95 transition-all"
-               >
-                 <KettlebellLogo className={`w-8 h-8 transition-transform duration-500 ${isNavOpen ? 'rotate-180' : ''}`} kettlebellColor="white" boltColor="#ebca7a" />
-               </button>
-               <p className="text-center font-heading text-[10px] mt-1 text-black bg-[#ebca7a] px-1 rounded border border-black uppercase font-black">Menu</p>
-            </div>
-
-            {navItems.map((item) => (
-              <button 
-                key={item.id} 
-                onClick={() => handleNavClick(item.id as any)}
-                className={`flex flex-col items-center gap-1 transition-all ${activeTab === item.id ? 'text-black scale-110' : 'text-gray-400 opacity-60'}`}
-              >
-                <div className={`p-2 rounded-xl border-2 transition-all ${activeTab === item.id ? 'bg-[#ebca7a] border-black shadow-[2px_2px_0px_#000]' : 'bg-transparent border-transparent'}`}>
-                   {item.icon}
+          {/* Menú de navegación FULL SCREEN */}
+          {isNavOpen && (
+            <div className="fixed inset-0 z-[1400] bg-[#fdf6e3] flex flex-col animate-in fade-in duration-200 max-w-md mx-auto">
+              <div className="flex items-center justify-between p-6">
+                <div className="flex items-center gap-2">
+                  <KettlebellLogo className="w-8 h-8" kettlebellColor="black" boltColor="#ebca7a" />
+                  <span className="font-heading text-xl tracking-tighter">BELLFORCE</span>
                 </div>
-                <span className="text-[11px] font-black uppercase tracking-tighter">{item.label}</span>
-              </button>
-            ))}
-          </nav>
-          {!isNavOpen && <div className="fixed bottom-0 left-0 right-0 h-2 bg-black/5 pointer-events-none" />}
+                <button onClick={() => setIsNavOpen(false)} className="w-11 h-11 neo-brutalism bg-white border-black rounded-full flex items-center justify-center active:scale-90">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <div className="flex-1 flex flex-col justify-center gap-3 px-6 pb-28">
+                {navItems.map((item) => {
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleNavClick(item.id as any)}
+                      className={`w-full flex items-center gap-4 p-4 rounded-2xl neo-brutalism border-black transition-all active:translate-y-0.5 active:shadow-none ${isActive ? 'bg-[#ebca7a]' : 'bg-white'}`}
+                    >
+                      <span className="w-11 h-11 flex items-center justify-center bg-black text-white rounded-xl shrink-0">{item.icon}</span>
+                      <span className="font-heading text-xl uppercase tracking-tight">{item.label}</span>
+                      {isActive && <span className="ml-auto text-[10px] font-black uppercase bg-black text-white px-2 py-1 rounded-full">Aquí</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* FAB flotante (toggle) */}
+          <button
+            onClick={() => setIsNavOpen(!isNavOpen)}
+            className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[1450] w-16 h-16 neo-brutalism rounded-full flex items-center justify-center border-black shadow-[4px_4px_0px_#000] active:scale-95 transition-colors ${isNavOpen ? 'bg-[#ebca7a]' : 'bg-black'}`}
+            aria-label={isNavOpen ? 'Cerrar menú' : 'Abrir menú'}
+          >
+            <KettlebellLogo
+              className="w-9 h-9"
+              kettlebellColor={isNavOpen ? 'black' : 'white'}
+              boltColor={isNavOpen ? 'black' : '#ebca7a'}
+            />
+          </button>
         </>
       )}
     </div>
