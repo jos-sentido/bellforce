@@ -47,7 +47,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onLogout, onExport, o
             <h3 className="font-heading text-lg leading-none truncate">{user.name}</h3>
             <p className="text-[12px] font-bold text-gray-500 truncate">{user.email}</p>
             <span className={`inline-block mt-1 text-[9px] font-black uppercase px-2 py-0.5 rounded border-2 ${user.role === 'admin' ? 'bg-black text-[#ebca7a] border-black' : 'bg-gray-100 text-gray-600 border-gray-300'}`}>
-              {user.role === 'admin' ? '🛡️ Administrador' : 'Usuario'}
+              {user.role === 'admin' ? 'Administrador' : 'Usuario'}
             </span>
           </div>
         </div>

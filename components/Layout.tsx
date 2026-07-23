@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { CircuitCycle, Workout, WorkoutLog } from '../types';
+import { ArchiveIcon } from './icons';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -117,7 +118,7 @@ const Layout: React.FC<LayoutProps> = ({
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}/>
           <div className="relative w-80 h-full bg-[#fdf6e3] border-l-4 border-black p-6 flex flex-col shadow-2xl animate-in slide-in-from-right">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="font-heading text-xl">{showArchived ? 'ARCHIVADOS' : 'CIRCUITOS'}</h3>
+              <h3 className="font-heading text-xl">{showArchived ? 'ARCHIVADOS' : 'ACTIVIDAD'}</h3>
               <button onClick={() => setIsMenuOpen(false)} className="text-gray-500"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             </div>
             <div className="flex-1 overflow-y-auto space-y-6 pr-1 scrollbar-thin scrollbar-thumb-black">
@@ -142,8 +143,8 @@ const Layout: React.FC<LayoutProps> = ({
                         <div className="flex justify-end mt-1 font-heading text-xs">{completedLogs.length}/{totalWorkouts}</div>
                       </button>
                       {!isActive && (
-                        <button onClick={(e) => {e.stopPropagation(); cycle.isArchived ? onUnarchiveCycle(cycle.id) : onArchiveCycle(cycle.id);}} className="absolute -top-1 -right-1 w-6 h-6 flex items-center justify-center bg-white border-2 border-black rounded-full text-[12px] shadow-[1px_1px_0px_#000] active:translate-y-0.5 active:shadow-none">
-                          {cycle.isArchived ? '📁' : '📦'}
+                        <button title={cycle.isArchived ? 'Desarchivar' : 'Archivar'} onClick={(e) => {e.stopPropagation(); cycle.isArchived ? onUnarchiveCycle(cycle.id) : onArchiveCycle(cycle.id);}} className="absolute -top-1 -right-1 w-6 h-6 flex items-center justify-center bg-white border-2 border-black rounded-full shadow-[1px_1px_0px_#000] active:translate-y-0.5 active:shadow-none">
+                          <ArchiveIcon className="w-3.5 h-3.5 text-black" />
                         </button>
                       )}
                     </div>

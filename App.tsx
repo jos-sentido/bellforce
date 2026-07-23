@@ -15,7 +15,7 @@ import StandalonePickerView from './views/StandalonePickerView';
 import SettingsView from './views/SettingsView';
 import { observeAuth, logout as firebaseLogout } from './services/auth';
 import {
-  loadWorkouts, loadTemplates, loadCycles, seedForUser,
+  loadWorkouts, loadTemplates, loadCycles, seedGlobalBase,
   createWorkout, updateWorkout, deleteWorkout,
   saveTemplate, deleteTemplate,
   createCycle, updateCycle, saveLog,
@@ -55,8 +55,9 @@ const App: React.FC = () => {
         let [library, templates, cycles] = await Promise.all([
           loadWorkouts(uid), loadTemplates(uid), loadCycles(uid),
         ]);
-        if (library.length === 0) {
-          await seedForUser(KETTLEBELL_CIRCUIT, uid);
+        // Solo un admin siembra el contenido base GLOBAL (público) si falta.
+        if (state.currentUser?.role === 'admin' && !library.some(w => w.isPublic)) {
+          await seedGlobalBase(KETTLEBELL_CIRCUIT, uid);
           [library, templates] = await Promise.all([loadWorkouts(uid), loadTemplates(uid)]);
         }
         setState(prev => ({ ...prev, library, templates, cycles }));

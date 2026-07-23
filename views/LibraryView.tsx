@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { Workout, CircuitTemplate, UserRole, CircuitCycle } from '../types';
 import { uploadMedia, isCloudinaryConfigured } from '../services/cloudinary';
 import MediaCarousel from '../components/MediaCarousel';
+import { BoltIcon, EyeIcon, EyeOffIcon } from '../components/icons';
 
 interface LibraryViewProps {
   userRole: UserRole;
@@ -183,7 +184,9 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                 <div onClick={() => setPreviewW(w)} className="cursor-pointer flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h4 className="font-heading text-lg leading-none">{w.name}</h4>
-                    {w.isPublic ? <span title="Workout Global" className="text-sm">🛡️</span> : <span title="Workout Privado" className="text-sm">🔒</span>}
+                    {w.isPublic
+                      ? <EyeIcon className="w-4 h-4 text-[#c6a256] shrink-0" />
+                      : <EyeOffIcon className="w-4 h-4 text-gray-400 shrink-0" />}
                   </div>
                   <p className="text-[11px] font-bold uppercase flex items-center gap-1.5">
                     <span className={w.isPublic ? 'text-[#c6a256]' : 'text-gray-600'}>
@@ -201,7 +204,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                         title="Entrenar Ahora"
                         className="w-7 h-7 flex items-center justify-center bg-black text-[#ebca7a] border-2 border-black rounded-lg shadow-[2px_2px_0px_#ebca7a] active:translate-y-0.5 active:shadow-none hover:bg-gray-900"
                       >
-                        <span className="text-xs">💪</span>
+                        <BoltIcon className="w-4 h-4" />
                       </button>
                    )}
                   {(userRole === 'admin' || w.createdBy === userId) && (
@@ -232,7 +235,9 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                <div>
                  <div className="flex items-center gap-2 mb-1">
                    <h4 className="font-heading text-lg leading-none">{t.name}</h4>
-                   {t.isPublic && <span title="Circuito Global" className="text-sm">🛡️</span>}
+                   {t.isPublic
+                     ? <EyeIcon className="w-4 h-4 text-[#c6a256] shrink-0" />
+                     : <EyeOffIcon className="w-4 h-4 text-gray-400 shrink-0" />}
                  </div>
                  <p className="text-[11px] font-bold uppercase flex items-center gap-1.5">
                    <span className={t.isPublic ? 'text-[#c6a256]' : 'text-gray-600'}>
@@ -265,7 +270,10 @@ const LibraryView: React.FC<LibraryViewProps> = ({
           <div className="bg-white neo-brutalism p-6 rounded-2xl w-full max-w-sm border-black animate-in zoom-in-95 max-h-[80vh] flex flex-col shadow-2xl">
              <div className="mb-4">
                <h4 className="font-heading text-xl mb-1">{previewT.name}</h4>
-               <p className="text-[11px] font-black uppercase text-gray-500">{previewT.isPublic ? '🛡️ Circuito Bellforce Global' : 'Circuito Personal 🔒'}</p>
+               <p className="text-[11px] font-black uppercase text-gray-500 flex items-center gap-1.5">
+                 {previewT.isPublic ? <EyeIcon className="w-3.5 h-3.5" /> : <EyeOffIcon className="w-3.5 h-3.5" />}
+                 {previewT.isPublic ? 'Circuito Bellforce Global' : 'Circuito Personal'}
+               </p>
              </div>
              <div className="flex-1 overflow-y-auto space-y-2 pr-2 mb-6 scrollbar-thin scrollbar-thumb-black">
                {previewT.workoutIds.map((id, idx) => {
@@ -295,7 +303,10 @@ const LibraryView: React.FC<LibraryViewProps> = ({
           <div className="bg-white neo-brutalism p-6 rounded-2xl w-full max-w-sm border-black animate-in zoom-in-95 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
              <div className="p-1">
                <h4 className="font-heading text-xl mb-1">{previewW.name}</h4>
-               <p className="text-[12px] font-black uppercase text-gray-500 mb-4">{previewW.isPublic ? '🛡️ Bellforce Global' : 'Personal 🔒'}</p>
+               <p className="text-[12px] font-black uppercase text-gray-500 mb-4 flex items-center gap-1.5">
+                 {previewW.isPublic ? <EyeIcon className="w-3.5 h-3.5" /> : <EyeOffIcon className="w-3.5 h-3.5" />}
+                 {previewW.isPublic ? 'Bellforce Global' : 'Personal'}
+               </p>
              </div>
              
              <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-black space-y-6">
@@ -354,9 +365,9 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                 {onQuickStart && (
                    <button 
                      onClick={() => onQuickStart(previewW)}
-                     className="w-full neo-brutalism bg-[#ebca7a] text-black p-3 rounded-xl font-heading text-xs border-black uppercase active:translate-y-1"
+                     className="w-full neo-brutalism bg-[#ebca7a] text-black p-3 rounded-xl font-heading text-xs border-black uppercase active:translate-y-1 flex items-center justify-center gap-2"
                    >
-                     ENTRENAR AHORA 💪
+                     ENTRENAR AHORA <BoltIcon className="w-4 h-4" />
                    </button>
                 )}
                 <button onClick={() => setPreviewW(null)} className="w-full neo-brutalism bg-black text-white p-3 rounded-xl font-heading text-xs border-black uppercase active:translate-y-1">Cerrar</button>
@@ -469,7 +480,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
           <div className="bg-white neo-brutalism p-6 rounded-2xl w-full max-w-sm space-y-4 border-black animate-in zoom-in-95 shadow-2xl">
              <div className="flex justify-between items-start">
                <h3 className="font-heading text-xl">{editingW.id ? 'EDITAR' : 'NUEVO'} WORKOUT</h3>
-               {formW.isPublic && <span className="bg-[#ebca7a] text-black text-[9px] font-black uppercase px-2 py-1 rounded border border-black">Global 🛡️</span>}
+               {formW.isPublic && <span className="bg-[#ebca7a] text-black text-[9px] font-black uppercase px-2 py-1 rounded border border-black flex items-center gap-1">Global <EyeIcon className="w-3 h-3" /></span>}
              </div>
              {userRole === 'admin' && (
                <div className="bg-gray-50 p-3 rounded-xl border-2 border-black">

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { CircuitCycle, Workout, WorkoutLog } from '../types';
+import { CameraIcon } from '../components/icons';
 
 interface HistoryViewProps {
   cycles: CircuitCycle[];
@@ -49,7 +50,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
                            <div className="flex justify-between items-center mt-2">
                              <div className="flex gap-2">
                                {log.aiAnalysisText && <span className="text-[9px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md font-black uppercase border border-blue-200">IA ANALYZED</span>}
-                               {log.statsImages && log.statsImages.length > 0 && <span className="text-[9px] bg-gray-100 text-gray-800 px-2 py-0.5 rounded-md font-black uppercase border border-gray-200">📸 {log.statsImages.length} FOTOS</span>}
+                               {log.statsImages && log.statsImages.length > 0 && <span className="text-[9px] bg-gray-100 text-gray-800 px-2 py-0.5 rounded-md font-black uppercase border border-gray-200 inline-flex items-center gap-1"><CameraIcon className="w-3 h-3" /> {log.statsImages.length} FOTOS</span>}
                              </div>
                              <span className="text-[11px] font-black uppercase underline group-hover:no-underline">Ver detalles →</span>
                            </div>

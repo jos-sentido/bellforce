@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { CircuitCycle } from '../types';
+import { BoltIcon } from '../components/icons';
 
 interface TrainingHubViewProps {
   activeCycle: CircuitCycle | null;
@@ -77,7 +78,7 @@ const TrainingHubView: React.FC<TrainingHubViewProps> = ({
               <span className="text-[11px] font-black uppercase px-2 py-1 rounded border-2 border-black bg-white">
                 MODO LIBRE
               </span>
-              <span className="text-2xl">💪</span>
+              <BoltIcon className="w-7 h-7 text-black" />
             </div>
             
             <h3 className="font-heading text-2xl mb-2">ENTRENO INDIVIDUAL</h3>

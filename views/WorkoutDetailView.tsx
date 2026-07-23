@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Workout, WorkoutLog } from '../types';
 import { analyzeWorkoutPerformance, suggestProgressiveOverload } from '../services/geminiService';
 import { uploadImage, isCloudinaryConfigured } from '../services/cloudinary';
+import { BoltIcon } from '../components/icons';
 
 interface WorkoutDetailViewProps {
   workout: Workout;
@@ -239,7 +240,7 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
           <button onClick={handleComplete} className="w-full neo-brutalism bg-[#77b074] p-5 rounded-2xl font-heading text-xl border-black shadow-lg active:translate-y-1">FINALIZAR SESIÓN</button>
         ) : (
           <div className="space-y-4">
-             <button onClick={onRetrain} className="w-full neo-brutalism bg-[#ebca7a] p-5 rounded-2xl font-heading text-xl border-black animate-pulse">VOLVER A ENTRENAR 💪</button>
+             <button onClick={onRetrain} className="w-full neo-brutalism bg-[#ebca7a] p-5 rounded-2xl font-heading text-xl border-black animate-pulse flex items-center justify-center gap-2">VOLVER A ENTRENAR <BoltIcon className="w-5 h-5" /></button>
              <button onClick={handleComplete} className="w-full neo-brutalism bg-white p-3 rounded-2xl font-heading text-xs uppercase border-black opacity-60">Actualizar Histórico</button>
           </div>
         )}

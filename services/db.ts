@@ -105,24 +105,28 @@ export async function saveLog(cycleId: string, log: WorkoutLog, isStandalone: bo
   await setDoc(doc(db, 'cycles', cycleId, 'logs', logDocId(log, isStandalone)), data);
 }
 
-// ---------- SEED (por usuario) ----------
-// Al entrar por primera vez, cada usuario recibe su propia copia de los 15
-// workouts base + la plantilla original (privados). No requiere admin.
-export async function seedForUser(baseWorkouts: Workout[], uid: string): Promise<void> {
+// ---------- SEED (contenido base GLOBAL / público) ----------
+// Los 15 workouts base y el circuito base son contenido "Bellforce Global":
+// públicos, con ids fijos legacy '1'..'15'. Solo un admin puede crearlos (ver
+// reglas). Se siembra una sola vez; todos los usuarios los ven.
+export async function hasPublicBase(): Promise<boolean> {
+  const snap = await getDocs(query(collection(db, 'workouts'), where('isPublic', '==', true)));
+  return !snap.empty;
+}
+
+export async function seedGlobalBase(baseWorkouts: Workout[], adminUid: string): Promise<void> {
   const batch = writeBatch(db);
   const ids: string[] = [];
   baseWorkouts.forEach(w => {
-    const ref = doc(collection(db, 'workouts')); // id automático
-    ids.push(ref.id);
     const { id, history, ...data } = w as any;
-    batch.set(ref, clean({ ...data, createdBy: uid, isPublic: false, createdAt: serverTimestamp() }));
+    ids.push(id); // conserva el id legacy '1'..'15'
+    batch.set(doc(db, 'workouts', id), clean({ ...data, createdBy: adminUid, isPublic: true, createdAt: serverTimestamp() }));
   });
-  const tref = doc(collection(db, 'templates'));
-  batch.set(tref, clean({
+  batch.set(doc(db, 'templates', 'fusion_circuit_original'), clean({
     name: 'Fusion Circuit Original',
     workoutIds: ids,
-    createdBy: uid,
-    isPublic: false,
+    createdBy: adminUid,
+    isPublic: true,
     createdAt: serverTimestamp(),
   }));
   await batch.commit();
