@@ -50,6 +50,14 @@ const Layout: React.FC<LayoutProps> = ({
   const visibleCycles = circuitCycles.filter(c => !c.isArchived);
   const archivedCycles = circuitCycles.filter(c => c.isArchived);
 
+  // Entrenamientos individuales (standalone) completados, más recientes primero.
+  const standaloneCycle = (cycles || []).find(c => c.type === 'standalone');
+  const individualLogs = standaloneCycle
+    ? [...(Array.isArray(standaloneCycle.logs) ? standaloneCycle.logs : [])]
+        .filter(l => l.completed)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    : [];
+
   const KettlebellLogo = ({ 
     className = "w-10 h-10", 
     kettlebellColor = "white", 
@@ -123,6 +131,10 @@ const Layout: React.FC<LayoutProps> = ({
             </div>
             <div className="flex-1 overflow-y-auto space-y-6 pr-1 scrollbar-thin scrollbar-thumb-black">
               <div className="space-y-3">
+                <p className="font-heading text-[11px] uppercase text-gray-500 tracking-wider">Circuitos</p>
+                {(showArchived ? archivedCycles : visibleCycles).length === 0 && (
+                  <p className="text-[10px] font-bold text-gray-400 uppercase py-2">{showArchived ? 'Sin circuitos archivados' : 'Sin circuitos aún'}</p>
+                )}
                 {(showArchived ? archivedCycles : visibleCycles).slice().reverse().map((cycle) => {
                   const actualIdx = (cycles || []).findIndex(c => c.id === cycle.id);
                   const isActive = cycle.status === 'active';
@@ -151,7 +163,30 @@ const Layout: React.FC<LayoutProps> = ({
                   );
                 })}
               </div>
-              
+
+              {!showArchived && individualLogs.length > 0 && (
+                <div className="space-y-2">
+                  <p className="font-heading text-[11px] uppercase text-gray-500 tracking-wider">Entrenamientos individuales</p>
+                  {individualLogs.map((log, i) => {
+                    const w = (library || []).find(x => x.id === log.workoutId);
+                    if (!w) return null;
+                    return (
+                      <button
+                        key={`${log.workoutId}-${log.date}-${i}`}
+                        onClick={() => { onViewLog?.(w, log); setIsMenuOpen(false); }}
+                        className="w-full text-left p-3 rounded-xl neo-brutalism bg-white border-black flex items-center gap-3 active:translate-y-0.5 active:shadow-none"
+                      >
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#ebca7a] border-2 border-black shrink-0" />
+                        <div className="flex-1 overflow-hidden">
+                          <p className="font-heading text-[11px] truncate leading-tight">{w.name}</p>
+                          <p className="text-[9px] font-bold text-gray-400 uppercase">{new Date(log.date).toLocaleDateString()} · {log.time}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
               <div className="pt-4 border-t-2 border-black/5">
                 <button onClick={() => {setShowArchived(!showArchived);}} className="w-full text-center text-[12px] font-black uppercase underline text-gray-500 mb-4">{showArchived ? 'Ver Activos' : 'Ver Archivados'}</button>
                 <button onClick={() => {onCreateNewCycle(); setIsMenuOpen(false);}} className="w-full bg-black text-white p-4 rounded-xl font-heading text-xs border-2 border-black active:translate-y-1 shadow-[4px_4px_0px_#ebca7a]">+ NUEVO CIRCUITO</button>
