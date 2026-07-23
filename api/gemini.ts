@@ -21,22 +21,41 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { model, contents } = req.body || {};
-    if (!model || !contents) {
-      res.status(400).json({ error: "Faltan 'model' o 'contents'" });
+    const { model, contents, prompt, imageRefs } = req.body || {};
+    if (!model || (!contents && !prompt)) {
+      res.status(400).json({ error: "Faltan 'model' y ('contents' o 'prompt')" });
       return;
     }
 
-    // Normaliza contents: string | { parts } | array de contents
     let normalized: any;
-    if (typeof contents === 'string') {
+    if (Array.isArray(imageRefs)) {
+      // Análisis multimodal: resolvemos cada imagen (URL o data URI) a inlineData.
+      const parts: any[] = [{ text: prompt || '' }];
+      for (const ref of imageRefs as string[]) {
+        try {
+          if (ref.startsWith('data:')) {
+            const comma = ref.indexOf(',');
+            const meta = ref.slice(5, ref.indexOf(';'));
+            parts.push({ inlineData: { mimeType: meta || 'image/png', data: ref.slice(comma + 1) } });
+          } else {
+            const imgRes = await fetch(ref);
+            const buf = Buffer.from(await imgRes.arrayBuffer());
+            const mimeType = imgRes.headers.get('content-type') || 'image/jpeg';
+            parts.push({ inlineData: { mimeType, data: buf.toString('base64') } });
+          }
+        } catch (e) {
+          console.error('No se pudo resolver imagen:', ref, e);
+        }
+      }
+      normalized = [{ role: 'user', parts }];
+    } else if (typeof contents === 'string') {
       normalized = [{ role: 'user', parts: [{ text: contents }] }];
     } else if (Array.isArray(contents)) {
       normalized = contents;
-    } else if (contents.parts) {
+    } else if (contents && contents.parts) {
       normalized = [{ role: 'user', parts: contents.parts }];
     } else {
-      normalized = [contents];
+      normalized = [{ role: 'user', parts: [{ text: prompt || '' }] }];
     }
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;

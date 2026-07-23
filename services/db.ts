@@ -98,9 +98,10 @@ function logDocId(log: WorkoutLog, isStandalone: boolean): string {
 }
 
 export async function saveLog(cycleId: string, log: WorkoutLog, isStandalone: boolean): Promise<void> {
-  // No persistimos las imágenes base64 en Firestore (límite 1MB/doc).
-  const { statsImages, ...rest } = log as any;
-  const data = clean({ ...rest, statsImages: [] });
+  // Solo persistimos URLs de imágenes (Cloudinary). El base64 (si Cloudinary no
+  // está configurado) se descarta para no exceder el límite de 1MB/doc.
+  const urls = (log.statsImages || []).filter(s => typeof s === 'string' && s.startsWith('http'));
+  const data = clean({ ...log, statsImages: urls });
   await setDoc(doc(db, 'cycles', cycleId, 'logs', logDocId(log, isStandalone)), data);
 }
 

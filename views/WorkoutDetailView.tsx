@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Workout, WorkoutLog } from '../types';
 import { analyzeWorkoutPerformance, suggestProgressiveOverload } from '../services/geminiService';
+import { uploadImage, isCloudinaryConfigured } from '../services/cloudinary';
 
 interface WorkoutDetailViewProps {
   workout: Workout;
@@ -27,6 +28,7 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
   const [images, setImages] = useState<string[]>([]);
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -119,6 +121,30 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
     setIsAnalyzing(false);
   };
 
+  const handleAddImage = async (file: File) => {
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onloadend = () => resolve(r.result as string);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+    let ref = base64;
+    if (isCloudinaryConfigured) {
+      setIsUploading(true);
+      try {
+        ref = await uploadImage(base64);
+      } catch (e) {
+        console.error('Cloudinary upload error:', e);
+        ref = base64; // fallback: se mostrará pero no se persistirá
+      } finally {
+        setIsUploading(false);
+      }
+    }
+    const newImgs = [...images, ref];
+    setImages(newImgs);
+    reanalyzeAll(newImgs);
+  };
+
   return (
     <div className="py-4 animate-in fade-in slide-in-from-bottom-4 duration-300 text-black relative min-h-[100vh]">
       <header className="flex justify-between items-center mb-6">
@@ -179,19 +205,15 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
             ))}
             {!currentLog?.completed && (
               <label className="w-24 h-24 shrink-0 neo-brutalism rounded-lg bg-white flex flex-col items-center justify-center cursor-pointer border-2 border-black">
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"></path></svg>
-                <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                {isUploading ? (
+                  <div className="w-6 h-6 border-4 border-black border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"></path></svg>
+                )}
+                <input type="file" className="hidden" accept="image/*" disabled={isUploading} onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) {
-                    const r = new FileReader();
-                    r.onloadend = () => {
-                      const base64 = r.result as string;
-                      const newImgs = [...images, base64];
-                      setImages(newImgs);
-                      reanalyzeAll(newImgs);
-                    };
-                    r.readAsDataURL(file);
-                  }
+                  if (file) handleAddImage(file);
+                  e.target.value = '';
                 }} />
               </label>
             )}

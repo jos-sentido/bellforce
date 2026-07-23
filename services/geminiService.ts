@@ -7,11 +7,11 @@ const MODEL_PRO = "gemini-2.5-pro";
 
 // Llama a Gemini a través del proxy serverless (/api/gemini), que mantiene la
 // API key en el servidor. Devuelve el texto o lanza para que el caller maneje.
-async function callGemini(model: string, contents: any): Promise<string> {
+async function callGemini(payload: any): Promise<string> {
   const res = await fetch("/api/gemini", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model, contents }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
@@ -21,13 +21,13 @@ async function callGemini(model: string, contents: any): Promise<string> {
   return data.text || "";
 }
 
+// images: lista de referencias (data URIs base64 o URLs https de Cloudinary).
+// El proxy /api/gemini las resuelve a inlineData del lado del servidor.
 export async function analyzeWorkoutPerformance(images: string[], workout: Workout) {
   if (images.length === 0) return "";
 
   try {
-    const parts: any[] = [
-      {
-        text: `Eres un entrenador experto de Kettlebells y analista de rendimiento deportivo.
+    const prompt = `Eres un entrenador experto de Kettlebells y analista de rendimiento deportivo.
         Analiza estas capturas de pantalla de un reloj Garmin de una misma sesión de entrenamiento.
 
         CONTEXTO DEL WORKOUT:
@@ -42,20 +42,9 @@ export async function analyzeWorkoutPerformance(images: string[], workout: Worko
         3. Usa saltos de línea simples para separar párrafos o ideas si es necesario.
         4. Considera TODAS las imágenes proporcionadas para un resumen consolidado.
         5. Evalúa el rendimiento en relación a la rutina descrita.
-        6. Sé conciso pero profesional.`,
-      },
-    ];
+        6. Sé conciso pero profesional.`;
 
-    images.forEach((base64Image) => {
-      parts.push({
-        inlineData: {
-          mimeType: "image/png",
-          data: base64Image.split(",")[1],
-        },
-      });
-    });
-
-    return await callGemini(MODEL_FLASH, { parts });
+    return await callGemini({ model: MODEL_FLASH, prompt, imageRefs: images });
   } catch (error) {
     console.error("Gemini Performance Analysis Error:", error);
     return "No se pudo realizar el análisis consolidado. Verifica tu conexión.";
@@ -70,7 +59,7 @@ export async function suggestProgressiveOverload(workoutName: string, previousCo
     ¿qué sugerencia específica de Progressive Overload darías para la siguiente sesión?
     Responde estrictamente en TEXTO PLANO sin usar asteriscos ni símbolos de formato Markdown. Sé breve y motivador.`;
 
-    return await callGemini(MODEL_FLASH, prompt);
+    return await callGemini({ model: MODEL_FLASH, contents: prompt });
   } catch (error) {
     console.error("Gemini Suggestion Error:", error);
     return "Mantén el peso actual y enfócate en la técnica.";
@@ -98,7 +87,7 @@ export async function analyzeGlobalPerformance(logs: (WorkoutLog & { workoutName
     4. Prohibido usar Markdown (** o #). Usa texto plano con saltos de línea claros.
     5. Sé motivador pero basado en datos reales.`;
 
-    return await callGemini(MODEL_PRO, prompt);
+    return await callGemini({ model: MODEL_PRO, contents: prompt });
   } catch (error) {
     console.error("Gemini Global Analysis Error:", error);
     return "Error al generar el análisis global. Asegúrate de tener entrenamientos con análisis IA en este periodo.";
@@ -158,7 +147,7 @@ export async function analyzeComparativePerformance(
     - Usa saltos de línea claros para separar secciones como: FRECUENCIA, CARGAS, SENSACIONES y VERDICTO.
     - Sé directo y profesional.`;
 
-    return await callGemini(MODEL_PRO, prompt);
+    return await callGemini({ model: MODEL_PRO, contents: prompt });
   } catch (error) {
     console.error("Gemini Comparative Analysis Error:", error);
     return "No se pudo generar la comparativa en este momento. Sigue entrenando para acumular más datos.";
