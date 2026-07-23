@@ -204,7 +204,7 @@ const Layout: React.FC<LayoutProps> = ({
         <>
           {/* Menú de navegación FULL SCREEN */}
           {isNavOpen && (
-            <div className="fixed inset-0 z-[1400] bg-[#fdf6e3] flex flex-col animate-in fade-in duration-200 max-w-md mx-auto">
+            <div className="fixed inset-0 z-[1400] bg-black/20 backdrop-blur-lg flex flex-col animate-in fade-in duration-200 max-w-md mx-auto">
               <div className="flex items-center justify-between p-6">
                 <div className="flex items-center gap-2">
                   <KettlebellLogo className="w-8 h-8" kettlebellColor="black" boltColor="#ebca7a" />
