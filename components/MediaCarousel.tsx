@@ -21,6 +21,13 @@ const MediaCarousel: React.FC<MediaCarouselProps> = ({ media, aspect = 'aspect-[
     if (idx !== active) setActive(idx);
   };
 
+  const go = (dir: 1 | -1) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const target = Math.min(Math.max(active + dir, 0), media.length - 1);
+    el.scrollTo({ left: target * el.clientWidth, behavior: 'smooth' });
+  };
+
   return (
     <div>
       <div className="relative rounded-2xl overflow-hidden border-2 border-black bg-black">
@@ -45,6 +52,28 @@ const MediaCarousel: React.FC<MediaCarouselProps> = ({ media, aspect = 'aspect-[
           <div className="absolute top-2 right-2 bg-black/70 text-white text-[11px] font-black px-2 py-0.5 rounded-full pointer-events-none">
             {active + 1}/{media.length}
           </div>
+        )}
+
+        {/* Flechitas de navegación (click para swipe) */}
+        {media.length > 1 && active > 0 && (
+          <button
+            type="button"
+            aria-label="Anterior"
+            onClick={() => go(-1)}
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_#000] active:translate-y-[calc(-50%+2px)] active:shadow-none hover:bg-white"
+          >
+            <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7"></path></svg>
+          </button>
+        )}
+        {media.length > 1 && active < media.length - 1 && (
+          <button
+            type="button"
+            aria-label="Siguiente"
+            onClick={() => go(1)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_#000] active:translate-y-[calc(-50%+2px)] active:shadow-none hover:bg-white"
+          >
+            <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7"></path></svg>
+          </button>
         )}
       </div>
 
