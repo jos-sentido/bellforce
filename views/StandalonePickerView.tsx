@@ -1,6 +1,20 @@
 
 import React, { useState, useMemo } from 'react';
-import { Workout } from '../types';
+import { Workout, EquipmentType } from '../types';
+import { EQUIPMENT_TYPES, EQUIPMENT_SHORT_LABELS, EQUIPMENT_LABELS } from '../constants';
+
+const EquipmentBadges: React.FC<{ equipment?: EquipmentType[] }> = ({ equipment }) => {
+  if (!equipment || equipment.length === 0) return null;
+  return (
+    <span className="inline-flex gap-1">
+      {equipment.map(eq => (
+        <span key={eq} title={EQUIPMENT_LABELS[eq]} className="text-[9px] font-black uppercase bg-black text-[#ebca7a] px-1 py-0.5 rounded border border-black">
+          {EQUIPMENT_SHORT_LABELS[eq]}
+        </span>
+      ))}
+    </span>
+  );
+};
 
 interface StandalonePickerViewProps {
   library: Workout[];
@@ -11,6 +25,7 @@ interface StandalonePickerViewProps {
 const StandalonePickerView: React.FC<StandalonePickerViewProps> = ({ library, onSelect, onBack }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [equipmentFilter, setEquipmentFilter] = useState<EquipmentType | null>(null);
 
   const workoutTypes = useMemo(() => {
     const types = new Set(library.map(w => w.type).filter(Boolean));
@@ -21,9 +36,10 @@ const StandalonePickerView: React.FC<StandalonePickerViewProps> = ({ library, on
     return library.filter(w => {
       const matchesSearch = w.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesFilter = !activeFilter || w.type === activeFilter;
-      return matchesSearch && matchesFilter;
+      const matchesEquipment = !equipmentFilter || w.equipment?.includes(equipmentFilter);
+      return matchesSearch && matchesFilter && matchesEquipment;
     });
-  }, [library, searchTerm, activeFilter]);
+  }, [library, searchTerm, activeFilter, equipmentFilter]);
 
   return (
     <div className="py-4 space-y-6 animate-in slide-in-from-right duration-300 text-black">
@@ -63,6 +79,24 @@ const StandalonePickerView: React.FC<StandalonePickerViewProps> = ({ library, on
             </button>
           ))}
         </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+          <button
+            onClick={() => setEquipmentFilter(null)}
+            className={`px-4 py-2 rounded-full border-2 border-black text-[11px] font-black uppercase whitespace-nowrap transition-colors ${!equipmentFilter ? 'bg-[#ebca7a] text-black' : 'bg-white text-black'}`}
+          >
+            Toda pesa
+          </button>
+          {EQUIPMENT_TYPES.map(eq => (
+            <button
+              key={eq}
+              onClick={() => setEquipmentFilter(eq)}
+              className={`px-4 py-2 rounded-full border-2 border-black text-[11px] font-black uppercase whitespace-nowrap transition-colors ${equipmentFilter === eq ? 'bg-[#ebca7a] text-black' : 'bg-white text-black'}`}
+            >
+              {EQUIPMENT_LABELS[eq]}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="space-y-4 pb-20">
@@ -74,9 +108,10 @@ const StandalonePickerView: React.FC<StandalonePickerViewProps> = ({ library, on
           >
             <div className="flex-1 pr-4">
               <h4 className="font-heading text-sm mb-1 group-hover:text-[#c6a256] transition-colors">{w.name}</h4>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <span className="text-[10px] font-black uppercase text-gray-400">{w.weight}</span>
                 <span className="text-[10px] font-black uppercase text-gray-600 bg-gray-100 px-1 rounded">{w.type}</span>
+                <EquipmentBadges equipment={w.equipment} />
               </div>
             </div>
             <div className="w-10 h-10 bg-black text-[#ebca7a] rounded-xl flex items-center justify-center border-2 border-black group-hover:bg-[#ebca7a] group-hover:text-black transition-all">

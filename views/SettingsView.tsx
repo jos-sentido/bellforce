@@ -159,7 +159,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onLogout, onExport, o
         </button>
       </section>
 
-      <p className="text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Bellforce · Kettlebell Evolution System</p>
+      <p className="text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Bellforce · Entrenamiento con pesas</p>
     </div>
   );
 };

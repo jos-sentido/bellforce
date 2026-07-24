@@ -1,5 +1,5 @@
 
-import { Workout } from './types';
+import { Workout, EquipmentType } from './types';
 
 export const KETTLEBELL_CIRCUIT: Workout[] = [
   {
@@ -8,6 +8,7 @@ export const KETTLEBELL_CIRCUIT: Workout[] = [
     name: "Full Chain Complex",
     weight: "24 kg",
     type: "Fuerza total / técnica",
+    equipment: ["kettlebell"],
     duration: "35–40 min",
     description: "Swing → High Pull → Snatch → Press → Squat → Thruster (5 reps/side, 6 rounds, 2’ rest).",
     createdBy: "system",
@@ -19,6 +20,7 @@ export const KETTLEBELL_CIRCUIT: Workout[] = [
     name: "Swing + Windmill EMOM",
     weight: "24 kg",
     type: "Core / estabilidad",
+    equipment: ["kettlebell"],
     duration: "20 min",
     description: "Alternar 5 swings y 5 press-to-windmill por lado durante 20 min EMOM.",
     createdBy: "system",
@@ -30,6 +32,7 @@ export const KETTLEBELL_CIRCUIT: Workout[] = [
     name: "Hybrid Strength Circuit",
     weight: "24 kg",
     type: "Piernas / control / potencia",
+    equipment: ["kettlebell"],
     duration: "30–35 min",
     description: "Clean+Press (5/side) → Swing+Goblet Squat (5 reps) → Dead Clean+Reverse Lunge (5/side). 30 min AMRAP. 10 rounds.",
     createdBy: "system",
@@ -41,6 +44,7 @@ export const KETTLEBELL_CIRCUIT: Workout[] = [
     name: "Snatch & Press EMOM",
     weight: "20 kg",
     type: "Potencia / explosividad",
+    equipment: ["kettlebell"],
     duration: "30 min",
     description: "5 snatches por brazo cada minuto - 23 min + 13 min Tactical Clean to Press, 10 reps.",
     createdBy: "system",
@@ -52,6 +56,7 @@ export const KETTLEBELL_CIRCUIT: Workout[] = [
     name: "Slingshot to Thruster Flow",
     weight: "20 kg",
     type: "Potencia + control + endurance",
+    equipment: ["kettlebell"],
     duration: "30-35 min",
     description: "Slingshot to Thruster (5 reps side). 10 pushups. 10 rounds.",
     createdBy: "system",
@@ -63,6 +68,7 @@ export const KETTLEBELL_CIRCUIT: Workout[] = [
     name: "Strength & Conditioning Flow",
     weight: "24 kg",
     type: "Full-body / resistencia",
+    equipment: ["kettlebell"],
     duration: "35 min",
     description: "5 swings, 5 squats, 5 clean-to-press por lado × 10 rounds.",
     createdBy: "system",
@@ -74,6 +80,7 @@ export const KETTLEBELL_CIRCUIT: Workout[] = [
     name: "Spartan 300",
     weight: "24 kg KB + 10 lb mace",
     type: "Core / potencia rotacional",
+    equipment: ["kettlebell"],
     duration: "30 min",
     description: "30min EMOM: Min 1 → 10 snatches (5/side), Min 2 → 10 Macebell 360 swings + curl (5/side).",
     createdBy: "system",
@@ -85,6 +92,7 @@ export const KETTLEBELL_CIRCUIT: Workout[] = [
     name: "Tactical Clean Sequence",
     weight: "24 kg",
     type: "Técnica / control / fuerza",
+    equipment: ["kettlebell"],
     duration: "30 min",
     description: "Tactical Cleans (Press → Press → Squat → Squat), 5 reps/round - 10 rounds.",
     createdBy: "system",
@@ -96,6 +104,7 @@ export const KETTLEBELL_CIRCUIT: Workout[] = [
     name: "The Protocol",
     weight: "20 kg",
     type: "Resistencia muscular",
+    equipment: ["kettlebell"],
     duration: "35–40 min",
     description: "5 series: 5 snatch laterales C/L + 20 goblet squats + 5 PUNCHES (C/L) + 20 - 2 HAND press.",
     createdBy: "system",
@@ -107,6 +116,7 @@ export const KETTLEBELL_CIRCUIT: Workout[] = [
     name: "Push & Grind Flow",
     weight: "20 kg",
     type: "Metabólico / resistencia",
+    equipment: ["kettlebell"],
     duration: "45 min",
     description: "100 snatches, 200 push-ups, 100 rows, 50 thrusters (dividido en 45 min).",
     createdBy: "system",
@@ -118,6 +128,7 @@ export const KETTLEBELL_CIRCUIT: Workout[] = [
     name: "Full-Body No Fluff Flow",
     weight: "24 kg",
     type: "Fuerza / control técnico",
+    equipment: ["kettlebell"],
     duration: "25–35 min",
     description: "5 swings, 5 squats, 5 snatches, 5 thrusters (alt cada lado/ejercicio). 5 rounds.",
     createdBy: "system",
@@ -129,6 +140,7 @@ export const KETTLEBELL_CIRCUIT: Workout[] = [
     name: "Kettlebell Punch Flow",
     weight: "20 kg",
     type: "Potencia rotacional / boxeo",
+    equipment: ["kettlebell"],
     duration: "25–30 min",
     description: "5 square stance punches/arm → 5 orthodox → 5 southpaw. 12 rounds sin descanso.",
     createdBy: "system",
@@ -140,6 +152,7 @@ export const KETTLEBELL_CIRCUIT: Workout[] = [
     name: "One Tool, One Flow",
     weight: "24 kg",
     type: "Movilidad / fuerza estabilizadora",
+    equipment: ["kettlebell"],
     duration: "25–30 min",
     description: "1 figure8 + 1 thruster + 1 windmill × 10 reps (alternando lados). Luego 10 pushups = 1 round (10 rounds).",
     createdBy: "system",
@@ -151,6 +164,7 @@ export const KETTLEBELL_CIRCUIT: Workout[] = [
     name: "Clean-Press-Swing Flow",
     weight: "20 kg",
     type: "Coordinación / fuerza funcional",
+    equipment: ["kettlebell"],
     duration: "30–35 min",
     description: "Clean → Press → Swing → Clean → Squat → Snatch → Thruster. 5 reps/side × 10 rounds.",
     createdBy: "system",
@@ -162,9 +176,40 @@ export const KETTLEBELL_CIRCUIT: Workout[] = [
     name: "Rotational Snatch 300",
     weight: "16 kg",
     type: "Core rotacional / potencia",
+    equipment: ["kettlebell"],
     duration: "30–35 min",
     description: "Rotational clean → snatch, 10 reps/side, hasta 300 reps totales.",
     createdBy: "system",
     isPublic: true
   }
 ];
+
+// Tipos de pesas soportados y su presentación en UI/prompts de IA.
+export const EQUIPMENT_TYPES: EquipmentType[] = ["kettlebell", "dumbbell", "barbell"];
+
+export const EQUIPMENT_LABELS: Record<EquipmentType, string> = {
+  kettlebell: "Kettlebell",
+  dumbbell: "Mancuerna",
+  barbell: "Barra",
+};
+
+export const EQUIPMENT_SHORT_LABELS: Record<EquipmentType, string> = {
+  kettlebell: "KB",
+  dumbbell: "DB",
+  barbell: "BB",
+};
+
+// Forma plural natural para usar dentro de una oración (prompts de IA, textos).
+const EQUIPMENT_PLURAL_LABELS: Record<EquipmentType, string> = {
+  kettlebell: "kettlebells",
+  dumbbell: "mancuernas",
+  barbell: "barra",
+};
+
+// Describe en español natural qué pesas usa un workout, para prompts de IA y textos.
+export function describeEquipment(equipment?: EquipmentType[]): string {
+  if (!equipment || equipment.length === 0) return "pesas";
+  const labels = equipment.map(e => EQUIPMENT_PLURAL_LABELS[e]);
+  if (labels.length === 1) return labels[0];
+  return `${labels.slice(0, -1).join(", ")} y ${labels[labels.length - 1]} (entrenamiento mixto)`;
+}

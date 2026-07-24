@@ -1,5 +1,6 @@
 
 import { Workout, WorkoutLog, CircuitCycle } from "../types";
+import { describeEquipment } from "../constants";
 
 // Modelos centralizados. Cambiar aquí si tu API key soporta versiones más nuevas.
 const MODEL_FLASH = "gemini-2.5-flash";
@@ -27,7 +28,8 @@ export async function analyzeWorkoutPerformance(images: string[], workout: Worko
   if (images.length === 0) return "";
 
   try {
-    const prompt = `Eres un entrenador experto de Kettlebells y analista de rendimiento deportivo.
+    const equipmentDesc = describeEquipment(workout.equipment);
+    const prompt = `Eres un entrenador experto en entrenamiento con ${equipmentDesc} y analista de rendimiento deportivo.
         Analiza estas capturas de pantalla de un reloj Garmin de una misma sesión de entrenamiento.
 
         CONTEXTO DEL WORKOUT:
@@ -53,7 +55,7 @@ export async function analyzeWorkoutPerformance(images: string[], workout: Worko
 
 export async function suggestProgressiveOverload(workoutName: string, previousComments: string, previousOverload: string) {
   try {
-    const prompt = `Como entrenador experto de Kettlebells, basándote en el workout "${workoutName}"
+    const prompt = `Como entrenador experto en entrenamiento con pesas, basándote en el workout "${workoutName}"
     y considerando que en la sesión anterior el usuario comentó: "${previousComments}"
     y el plan de sobrecarga fue: "${previousOverload}",
     ¿qué sugerencia específica de Progressive Overload darías para la siguiente sesión?
@@ -72,7 +74,7 @@ export async function analyzeGlobalPerformance(logs: (WorkoutLog & { workoutName
       `- Fecha: ${new Date(l.date).toLocaleDateString()}, Workout: ${l.workoutName}, Peso: ${l.workoutWeight}, Análisis individual: ${l.aiAnalysisText || 'Sin análisis'}, Comentarios: ${l.comments}`
     ).join('\n');
 
-    const prompt = `Eres un analista de alto rendimiento para atletas de Kettlebell.
+    const prompt = `Eres un analista de alto rendimiento para atletas que entrenan con pesas.
     Analiza el desempeño global del usuario durante el periodo: ${rangeLabel}.
 
     DATOS DEL PERIODO:

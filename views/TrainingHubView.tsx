@@ -75,7 +75,7 @@ const TrainingHubView: React.FC<TrainingHubViewProps> = ({
           </div>
           {/* Decoración fondo */}
           <div className="absolute -right-4 -bottom-4 opacity-10 rotate-12">
-            <svg className="w-32 h-32" viewBox="0 0 24 24" fill="currentColor"><path d="M7 8V7C7 4.23858 9.23858 2 12 2C14.7614 2 17 4.23858 17 7V8H14V7C14 5.89543 13.1046 5 12 5C10.8954 5 10 5.89543 10 7V8H7Z"/><path d="M12 22C16.4183 22 20 18.4183 20 14C20 9.58172 16.4183 7 12 7C7.58172 7 4 9.58172 4 14C4 18.4183 7.58172 22 12 22Z"/></svg>
+            <svg className="w-32 h-32" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
           </div>
         </div>
 

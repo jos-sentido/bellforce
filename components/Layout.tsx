@@ -68,9 +68,8 @@ const Layout: React.FC<LayoutProps> = ({
     boltColor?: string 
   }) => (
     <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M7 8V7C7 4.23858 9.23858 2 12 2C14.7614 2 17 4.23858 17 7V8H14V7C14 5.89543 13.1046 5 12 5C10.8954 5 10 5.89543 10 7V8H7Z" fill={kettlebellColor}/>
-      <path d="M12 22C16.4183 22 20 18.4183 20 14C20 9.58172 16.4183 7 12 7C7.58172 7 4 9.58172 4 14C4 18.4183 7.58172 22 12 22Z" fill={kettlebellColor}/>
-      <path d="M13 11L10 14.5H12.2L11.5 18.5L15 14.5H12.8L14.2 11Z" fill={boltColor}/>
+      <circle cx="12" cy="12" r="10" fill={kettlebellColor}/>
+      <path d="M13 8L9 13H11.5L10.5 18L15 12.5H12.5L13 8Z" fill={boltColor}/>
     </svg>
   );
 

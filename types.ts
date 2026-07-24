@@ -1,6 +1,9 @@
 
 export type UserRole = 'admin' | 'user';
 
+// Tipos de pesas que puede usar un workout. Un workout puede combinar varias (entrenamiento mixto).
+export type EquipmentType = 'kettlebell' | 'dumbbell' | 'barbell';
+
 export interface User {
   id: string;
   name: string;
@@ -27,6 +30,7 @@ export interface Workout {
   name: string;
   weight: string;
   type: string;
+  equipment?: EquipmentType[]; // pesas usadas: kettlebell, dumbbell, barbell (puede ser mixto)
   duration: string;
   description: string;
   media?: MediaItem[]; // carrete de videos/imágenes del workout (feed)

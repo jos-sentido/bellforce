@@ -1,9 +1,25 @@
 
 import React, { useState, useMemo } from 'react';
-import { Workout, CircuitTemplate, UserRole, CircuitCycle } from '../types';
+import { Workout, CircuitTemplate, UserRole, CircuitCycle, EquipmentType } from '../types';
+import { EQUIPMENT_TYPES, EQUIPMENT_LABELS, EQUIPMENT_SHORT_LABELS } from '../constants';
 import { uploadMedia, isCloudinaryConfigured } from '../services/cloudinary';
 import MediaCarousel from '../components/MediaCarousel';
 import { BoltIcon, EyeIcon, EyeOffIcon } from '../components/icons';
+
+const EMPTY_WORKOUT_FORM = { name: '', weight: '', type: '', equipment: [] as EquipmentType[], duration: '', description: '', isPublic: false };
+
+const EquipmentBadges: React.FC<{ equipment?: EquipmentType[], className?: string }> = ({ equipment, className = '' }) => {
+  if (!equipment || equipment.length === 0) return null;
+  return (
+    <span className={`inline-flex gap-1 ${className}`}>
+      {equipment.map(eq => (
+        <span key={eq} title={EQUIPMENT_LABELS[eq]} className="text-[9px] font-black uppercase bg-black text-[#ebca7a] px-1.5 py-0.5 rounded border border-black">
+          {EQUIPMENT_SHORT_LABELS[eq]}
+        </span>
+      ))}
+    </span>
+  );
+};
 
 interface LibraryViewProps {
   userRole: UserRole;
@@ -36,15 +52,31 @@ const LibraryView: React.FC<LibraryViewProps> = ({
   const [pickerTypeFilter, setPickerTypeFilter] = useState<string | null>(null);
   const [mediaUploading, setMediaUploading] = useState(false);
 
-  const [formW, setFormW] = useState<Omit<Workout, 'id'>>({ 
-    name: '', weight: '', type: '', duration: '', description: '', isPublic: false, createdBy: userId 
+  const [formW, setFormW] = useState<Omit<Workout, 'id'>>({
+    ...EMPTY_WORKOUT_FORM, createdBy: userId
   });
   const [formT, setFormT] = useState<Omit<CircuitTemplate, 'id'>>({ 
     name: '', workoutIds: [], isPublic: false, createdBy: userId 
   });
 
   const [listTypeFilter, setListTypeFilter] = useState<string | null>(null);
+  const [listEquipmentFilter, setListEquipmentFilter] = useState<EquipmentType | null>(null);
+  const [pickerEquipmentFilter, setPickerEquipmentFilter] = useState<EquipmentType | null>(null);
   const [visFilter, setVisFilter] = useState<'all' | 'public' | 'mine'>('all');
+
+  const toggleFormEquipment = (eq: EquipmentType) => {
+    setFormW(prev => {
+      const current = prev.equipment || [];
+      const next = current.includes(eq) ? current.filter(e => e !== eq) : [...current, eq];
+      return { ...prev, equipment: next };
+    });
+  };
+
+  const templateEquipment = (workoutIds: string[]): EquipmentType[] => {
+    const set = new Set<EquipmentType>();
+    workoutIds.forEach(id => library.find(w => w.id === id)?.equipment?.forEach(eq => set.add(eq)));
+    return Array.from(set);
+  };
 
   const matchesVisibility = (isPublic: boolean, createdBy: string) =>
     visFilter === 'all' || (visFilter === 'public' ? isPublic : createdBy === userId);
@@ -52,6 +84,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
   const filteredW = library.filter(w =>
     w.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
     (!listTypeFilter || w.type === listTypeFilter) &&
+    (!listEquipmentFilter || w.equipment?.includes(listEquipmentFilter)) &&
     matchesVisibility(w.isPublic, w.createdBy)
   );
   const filteredT = templates.filter(t =>
@@ -68,9 +101,10 @@ const LibraryView: React.FC<LibraryViewProps> = ({
     return library.filter(w => {
       const matchesSearch = w.name.toLowerCase().includes(pickerSearch.toLowerCase());
       const matchesType = !pickerTypeFilter || w.type === pickerTypeFilter;
-      return matchesSearch && matchesType;
+      const matchesEquipment = !pickerEquipmentFilter || w.equipment?.includes(pickerEquipmentFilter);
+      return matchesSearch && matchesType && matchesEquipment;
     });
-  }, [library, pickerSearch, pickerTypeFilter]);
+  }, [library, pickerSearch, pickerTypeFilter, pickerEquipmentFilter]);
 
   // Cálculo del historial de pesos para el workout seleccionado en la previsualización
   const weightHistory = useMemo(() => {
@@ -105,7 +139,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
     if (editingW && editingW.id) onUpdateWorkout({ ...formW, id: editingW.id } as Workout);
     else onAddToLibrary(formW);
     setEditingW(null);
-    setFormW({ name: '', weight: '', type: '', duration: '', description: '', isPublic: false, createdBy: userId });
+    setFormW({ ...EMPTY_WORKOUT_FORM, createdBy: userId });
   };
 
   const handleAddWorkoutMedia = async (files: FileList) => {
@@ -158,7 +192,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
           onClick={() => {
             if (activeTab === 'workouts') {
               setEditingW({} as any);
-              setFormW({ name: '', weight: '', type: '', duration: '', description: '', isPublic: false, createdBy: userId });
+              setFormW({ ...EMPTY_WORKOUT_FORM, createdBy: userId });
             } else {
               setEditingT({} as any);
               setFormT({ name: '', workoutIds: [], isPublic: false, createdBy: userId });
@@ -215,6 +249,25 @@ const LibraryView: React.FC<LibraryViewProps> = ({
             ))}
           </div>
         )}
+        {activeTab === 'workouts' && (
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <button
+              onClick={() => setListEquipmentFilter(null)}
+              className={`px-3 py-1.5 rounded-full border-2 border-black text-[10px] font-black uppercase whitespace-nowrap transition-colors ${!listEquipmentFilter ? 'bg-black text-white' : 'bg-white text-black'}`}
+            >
+              Toda pesa
+            </button>
+            {EQUIPMENT_TYPES.map(eq => (
+              <button
+                key={eq}
+                onClick={() => setListEquipmentFilter(eq)}
+                className={`px-3 py-1.5 rounded-full border-2 border-black text-[10px] font-black uppercase whitespace-nowrap transition-colors ${listEquipmentFilter === eq ? 'bg-black text-white' : 'bg-white text-black'}`}
+              >
+                {EQUIPMENT_LABELS[eq]}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="space-y-5 pt-3 pb-12">
@@ -252,6 +305,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                   </span>
                   <span className="text-gray-400">•</span>
                   <span className="text-gray-600 whitespace-nowrap">{w.weight}</span>
+                  <EquipmentBadges equipment={w.equipment} />
                 </p>
               </div>
               <p className="text-[11px] text-gray-600 line-clamp-1 mb-4 italic">{w.description}</p>
@@ -288,6 +342,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                  </span>
                  <span className="text-gray-400">•</span>
                  <span className="text-gray-600 whitespace-nowrap">{t.workoutIds.length} Sesiones</span>
+                 <EquipmentBadges equipment={templateEquipment(t.workoutIds)} />
                </p>
             </div>
             <div className="flex gap-2">
@@ -322,7 +377,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                      <span className="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-[11px] font-black shrink-0">{idx + 1}</span>
                      <div className="flex-1">
                        <p className="text-[12px] font-black uppercase leading-tight">{w?.name || 'Cargando...'}</p>
-                       <p className="text-[10px] text-gray-600 font-bold uppercase">{w?.weight} • {w?.type}</p>
+                       <p className="text-[10px] text-gray-600 font-bold uppercase flex items-center gap-1.5">{w?.weight} • {w?.type}<EquipmentBadges equipment={w?.equipment} /></p>
                      </div>
                    </div>
                  );
@@ -353,9 +408,12 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                   <MediaCarousel media={previewW.media} />
                 )}
                 <section>
-                  <div className="flex gap-2 mb-3">
+                  <div className="flex gap-2 mb-3 flex-wrap">
                     <span className="bg-[#ebca7a] text-black px-2 py-1 rounded text-[11px] font-bold border border-black">{previewW.weight}</span>
                     <span className="bg-black text-white px-2 py-1 rounded text-[11px] font-bold border border-black">{previewW.type}</span>
+                    {(previewW.equipment || []).map(eq => (
+                      <span key={eq} className="bg-white text-black px-2 py-1 rounded text-[11px] font-bold border border-black">{EQUIPMENT_LABELS[eq]}</span>
+                    ))}
                   </div>
                   <div className="bg-gray-50 p-4 rounded-xl border-2 border-dashed border-black/10">
                     <p className="text-[11px] leading-relaxed whitespace-pre-wrap italic text-black">"{previewW.description}"</p>
@@ -489,6 +547,12 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                      <button key={type} onClick={() => setPickerTypeFilter(type)} className={`px-3 py-1.5 rounded-full border-2 border-black text-[10px] font-black uppercase whitespace-nowrap transition-colors ${pickerTypeFilter === type ? 'bg-black text-white' : 'bg-white text-black'}`}>{type}</button>
                    ))}
                 </div>
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                   <button onClick={() => setPickerEquipmentFilter(null)} className={`px-3 py-1.5 rounded-full border-2 border-black text-[10px] font-black uppercase whitespace-nowrap transition-colors ${!pickerEquipmentFilter ? 'bg-[#ebca7a] text-black' : 'bg-white text-black'}`}>Toda pesa</button>
+                   {EQUIPMENT_TYPES.map(eq => (
+                     <button key={eq} onClick={() => setPickerEquipmentFilter(eq)} className={`px-3 py-1.5 rounded-full border-2 border-black text-[10px] font-black uppercase whitespace-nowrap transition-colors ${pickerEquipmentFilter === eq ? 'bg-[#ebca7a] text-black' : 'bg-white text-black'}`}>{EQUIPMENT_LABELS[eq]}</button>
+                   ))}
+                </div>
              </div>
 
              <div className="flex-1 overflow-y-auto space-y-2 pr-1 bg-gray-50 rounded-xl p-2 border-2 border-black scrollbar-thin scrollbar-thumb-black">
@@ -497,7 +561,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                     {formT.workoutIds.includes(w.id) && <div className="absolute top-0 right-0 bg-[#ebca7a] px-1.5 py-0.5 border-l border-b border-black text-[6px] font-black uppercase">En secuencia</div>}
                     <div>
                       <h4 className="font-heading text-[12px] text-black leading-tight">{w.name}</h4>
-                      <p className="text-[10px] font-bold text-gray-500 uppercase">{w.weight} • {w.type}</p>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1.5">{w.weight} • {w.type}<EquipmentBadges equipment={w.equipment} /></p>
                     </div>
                     <div className="w-6 h-6 rounded-full border border-black bg-white flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors">
                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4"></path></svg>
@@ -543,6 +607,24 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                 <div className="space-y-1">
                   <label className="text-[11px] font-black text-gray-700 uppercase ml-1">Tipo</label>
                   <input type="text" className="w-full p-3 neo-brutalism rounded-lg text-sm focus:outline-none border-black bg-white text-black font-bold" value={formW.type} onChange={e => setFormW({...formW, type: e.target.value})} />
+                </div>
+             </div>
+             <div className="space-y-1">
+                <label className="text-[11px] font-black text-gray-700 uppercase ml-1">Pesas usadas</label>
+                <div className="flex gap-2">
+                  {EQUIPMENT_TYPES.map(eq => {
+                    const active = (formW.equipment || []).includes(eq);
+                    return (
+                      <button
+                        type="button"
+                        key={eq}
+                        onClick={() => toggleFormEquipment(eq)}
+                        className={`flex-1 p-2.5 rounded-lg border-2 border-black text-[11px] font-black uppercase transition-colors ${active ? 'bg-black text-[#ebca7a]' : 'bg-white text-black'}`}
+                      >
+                        {EQUIPMENT_LABELS[eq]}
+                      </button>
+                    );
+                  })}
                 </div>
              </div>
              <div className="space-y-1">

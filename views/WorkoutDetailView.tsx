@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Workout, WorkoutLog } from '../types';
 import { analyzeWorkoutPerformance, suggestProgressiveOverload } from '../services/geminiService';
 import { uploadImage, isCloudinaryConfigured } from '../services/cloudinary';
+import { EQUIPMENT_LABELS } from '../constants';
 import { BoltIcon } from '../components/icons';
 
 interface WorkoutDetailViewProps {
@@ -164,6 +165,9 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
             <input disabled={currentLog?.completed} className="bg-transparent font-heading text-xs w-16 focus:outline-none" value={weight} onChange={(e) => setWeight(e.target.value)} />
           </div>
           <span className="bg-black text-white text-[11px] px-3 py-1.5 rounded-full font-bold uppercase">{workout.type}</span>
+          {(workout.equipment || []).map(eq => (
+            <span key={eq} className="bg-white text-black text-[11px] px-3 py-1.5 rounded-full font-bold uppercase border-2 border-black">{EQUIPMENT_LABELS[eq]}</span>
+          ))}
         </div>
         
         <label className="font-heading text-[12px] mb-1 block opacity-60 uppercase">Rutina:</label>

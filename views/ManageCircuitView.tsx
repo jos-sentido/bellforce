@@ -1,6 +1,20 @@
 
 import React, { useState } from 'react';
-import { Workout } from '../types';
+import { Workout, EquipmentType } from '../types';
+import { EQUIPMENT_SHORT_LABELS, EQUIPMENT_LABELS } from '../constants';
+
+const EquipmentBadges: React.FC<{ equipment?: EquipmentType[] }> = ({ equipment }) => {
+  if (!equipment || equipment.length === 0) return null;
+  return (
+    <span className="inline-flex gap-1 ml-1">
+      {equipment.map(eq => (
+        <span key={eq} title={EQUIPMENT_LABELS[eq]} className="text-[8px] font-black uppercase bg-black text-[#ebca7a] px-1 py-0.5 rounded border border-black">
+          {EQUIPMENT_SHORT_LABELS[eq]}
+        </span>
+      ))}
+    </span>
+  );
+};
 
 interface ManageCircuitViewProps {
   activeWorkouts: Workout[];
@@ -85,7 +99,7 @@ const ManageCircuitView: React.FC<ManageCircuitViewProps> = ({
                 >
                   <div>
                     <h4 className="font-heading text-[12px] leading-tight">{w.name}</h4>
-                    <p className="text-[10px] font-bold text-gray-600 uppercase">{w.weight} • {w.type}</p>
+                    <p className="text-[10px] font-bold text-gray-600 uppercase">{w.weight} • {w.type}<EquipmentBadges equipment={w.equipment} /></p>
                   </div>
                   <svg className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
                 </button>
@@ -107,7 +121,7 @@ const ManageCircuitView: React.FC<ManageCircuitViewProps> = ({
             
             <div className="flex-1 overflow-hidden">
                <h4 className="font-heading text-xs truncate text-black">{w.name}</h4>
-               <p className="text-[10px] text-gray-600 font-bold uppercase">{w.type}</p>
+               <p className="text-[10px] text-gray-600 font-bold uppercase">{w.type}<EquipmentBadges equipment={w.equipment} /></p>
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
