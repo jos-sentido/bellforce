@@ -43,8 +43,21 @@ const LibraryView: React.FC<LibraryViewProps> = ({
     name: '', workoutIds: [], isPublic: false, createdBy: userId 
   });
 
-  const filteredW = library.filter(w => w.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  const filteredT = templates.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const [listTypeFilter, setListTypeFilter] = useState<string | null>(null);
+  const [visFilter, setVisFilter] = useState<'all' | 'public' | 'mine'>('all');
+
+  const matchesVisibility = (isPublic: boolean, createdBy: string) =>
+    visFilter === 'all' || (visFilter === 'public' ? isPublic : createdBy === userId);
+
+  const filteredW = library.filter(w =>
+    w.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (!listTypeFilter || w.type === listTypeFilter) &&
+    matchesVisibility(w.isPublic, w.createdBy)
+  );
+  const filteredT = templates.filter(t =>
+    t.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    matchesVisibility(t.isPublic, t.createdBy)
+  );
 
   const workoutTypes = useMemo(() => {
     const types = new Set(library.map(w => w.type).filter(Boolean));
@@ -162,13 +175,47 @@ const LibraryView: React.FC<LibraryViewProps> = ({
         <button onClick={() => setActiveTab('templates')} className={`flex-1 p-3 text-[12px] font-black uppercase transition-colors ${activeTab === 'templates' ? 'bg-black text-white' : 'bg-white text-black'}`}>Circuitos</button>
       </div>
 
-      <input 
-        type="text" 
-        placeholder={`Buscar en ${activeTab === 'workouts' ? 'ejercicios' : 'circuitos'}...`} 
-        className="w-full neo-brutalism p-4 rounded-xl text-sm mb-6 bg-white text-black focus:outline-none border-black placeholder-gray-400" 
-        value={searchTerm} 
-        onChange={e => setSearchTerm(e.target.value)} 
+      <input
+        type="text"
+        placeholder={`Buscar en ${activeTab === 'workouts' ? 'ejercicios' : 'circuitos'}...`}
+        className="w-full neo-brutalism p-4 rounded-xl text-sm mb-3 bg-white text-black focus:outline-none border-black placeholder-gray-400"
+        value={searchTerm}
+        onChange={e => setSearchTerm(e.target.value)}
       />
+
+      {/* FILTROS: visibilidad + tipo */}
+      <div className="space-y-2 mb-4">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {([['all', 'Todos'], ['public', 'Globales'], ['mine', 'Míos']] as const).map(([val, label]) => (
+            <button
+              key={val}
+              onClick={() => setVisFilter(val)}
+              className={`px-3 py-1.5 rounded-full border-2 border-black text-[10px] font-black uppercase whitespace-nowrap transition-colors ${visFilter === val ? 'bg-black text-white' : 'bg-white text-black'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {activeTab === 'workouts' && workoutTypes.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <button
+              onClick={() => setListTypeFilter(null)}
+              className={`px-3 py-1.5 rounded-full border-2 border-black text-[10px] font-black uppercase whitespace-nowrap transition-colors ${!listTypeFilter ? 'bg-[#ebca7a] text-black' : 'bg-white text-black'}`}
+            >
+              Todo tipo
+            </button>
+            {workoutTypes.map(type => (
+              <button
+                key={type}
+                onClick={() => setListTypeFilter(type)}
+                className={`px-3 py-1.5 rounded-full border-2 border-black text-[10px] font-black uppercase whitespace-nowrap transition-colors ${listTypeFilter === type ? 'bg-[#ebca7a] text-black' : 'bg-white text-black'}`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="space-y-5 pt-3 pb-12">
         {activeTab === 'workouts' ? filteredW.map(w => {
@@ -249,8 +296,13 @@ const LibraryView: React.FC<LibraryViewProps> = ({
             </div>
           </div>
         ))}
+        {(activeTab === 'workouts' ? filteredW : filteredT).length === 0 && (
+          <div className="text-center py-12 neo-brutalism bg-white/50 rounded-2xl border-dashed border-black/20">
+            <p className="font-black uppercase text-[11px] text-gray-400 tracking-widest">Sin resultados con estos filtros</p>
+          </div>
+        )}
       </div>
-      
+
       {/* MODAL: Vista Previa de Circuito */}
       {previewT && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">

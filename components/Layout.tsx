@@ -99,102 +99,23 @@ const Layout: React.FC<LayoutProps> = ({
   ];
 
   return (
-    <div className="min-h-screen pb-32 max-w-md mx-auto relative bg-[#fdf6e3]">
-      {isNavOpen && (
-        <div 
-          className="fixed inset-0 bg-black/70 backdrop-blur-md z-[900] animate-in fade-in duration-300" 
-          onClick={() => setIsNavOpen(false)} 
-        />
-      )}
-
+    <div className="min-h-screen pb-10 max-w-md mx-auto relative bg-[#fdf6e3]">
       <header className="p-6 flex justify-between items-center bg-[#fdf6e3] sticky top-0 z-40">
         <div className="flex items-center gap-2">
            <KettlebellLogo className="w-10 h-10" kettlebellColor="black" boltColor="#ebca7a" />
            <h1 className="font-heading text-2xl tracking-tighter text-black">BELLFORCE</h1>
         </div>
         {isUserLoggedIn && (
-          <button onClick={() => setIsMenuOpen(true)} className="neo-brutalism bg-[#ebca7a] p-2 rounded-full active:scale-90 border-black shadow-[2px_2px_0px_#000] flex items-center justify-center">
-            <svg className="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/>
-            </svg>
+          <button
+            onClick={() => setIsNavOpen(true)}
+            aria-label="Abrir menú"
+            className="w-11 h-11 neo-brutalism bg-[#ebca7a] rounded-full active:scale-90 border-black shadow-[3px_3px_0px_#000] flex items-center justify-center"
+          >
+            <KettlebellLogo className="w-7 h-7" kettlebellColor="black" boltColor="#ebca7a" />
           </button>
         )}
       </header>
 
-      {isMenuOpen && isUserLoggedIn && (
-        <div className="fixed inset-0 z-[2000] flex justify-end">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}/>
-          <div className="relative w-80 h-full bg-[#fdf6e3] border-l-4 border-black p-6 flex flex-col shadow-2xl animate-in slide-in-from-right">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-heading text-xl">{showArchived ? 'ARCHIVADOS' : 'ACTIVIDAD'}</h3>
-              <button onClick={() => setIsMenuOpen(false)} className="text-gray-500"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-            </div>
-            <div className="flex-1 overflow-y-auto space-y-6 pr-1 scrollbar-thin scrollbar-thumb-black">
-              <div className="space-y-3">
-                <p className="font-heading text-[11px] uppercase text-gray-500 tracking-wider">Circuitos</p>
-                {(showArchived ? archivedCycles : visibleCycles).length === 0 && (
-                  <p className="text-[10px] font-bold text-gray-400 uppercase py-2">{showArchived ? 'Sin circuitos archivados' : 'Sin circuitos aún'}</p>
-                )}
-                {(showArchived ? archivedCycles : visibleCycles).slice().reverse().map((cycle) => {
-                  const actualIdx = (cycles || []).findIndex(c => c.id === cycle.id);
-                  const isActive = cycle.status === 'active';
-                  const isCompleted = cycle.status === 'completed';
-                  const completedLogs = Array.isArray(cycle.logs) ? cycle.logs.filter(l => l.completed) : [];
-                  const totalWorkouts = Array.isArray(cycle.workoutIds) ? cycle.workoutIds.length : 15;
-                  
-                  return (
-                    <div key={cycle.id} className="relative">
-                      <button onClick={() => handleSelectCycle(actualIdx)} className={`w-full text-left p-4 rounded-xl neo-brutalism transition-all border-black ${isActive ? 'bg-black text-white' : 'bg-white text-black opacity-80'}`}>
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="font-heading text-[12px] truncate pr-2">{cycle.name}</span>
-                          <span className={`shrink-0 text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${isActive ? 'bg-[#ebca7a] text-black border-black animate-pulse' : isCompleted ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-                            {isActive ? 'Activo' : isCompleted ? 'Completado' : 'Pausado'}
-                          </span>
-                        </div>
-                        <p className={`text-[10px] font-bold uppercase ${isActive ? 'text-gray-400' : 'text-gray-500 opacity-60'}`}>Inicio: {new Date(cycle.startDate).toLocaleDateString()}</p>
-                        <div className="flex justify-end mt-1 font-heading text-xs">{completedLogs.length}/{totalWorkouts}</div>
-                      </button>
-                      {!isActive && (
-                        <button title={cycle.isArchived ? 'Desarchivar' : 'Archivar'} onClick={(e) => {e.stopPropagation(); cycle.isArchived ? onUnarchiveCycle(cycle.id) : onArchiveCycle(cycle.id);}} className="absolute -top-1 -right-1 w-6 h-6 flex items-center justify-center bg-white border-2 border-black rounded-full shadow-[1px_1px_0px_#000] active:translate-y-0.5 active:shadow-none">
-                          <ArchiveIcon className="w-3.5 h-3.5 text-black" />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {!showArchived && individualLogs.length > 0 && (
-                <div className="space-y-2">
-                  <p className="font-heading text-[11px] uppercase text-gray-500 tracking-wider">Entrenamientos individuales</p>
-                  {individualLogs.map((log, i) => {
-                    const w = (library || []).find(x => x.id === log.workoutId);
-                    if (!w) return null;
-                    return (
-                      <button
-                        key={`${log.workoutId}-${log.date}-${i}`}
-                        onClick={() => { onViewLog?.(w, log); setIsMenuOpen(false); }}
-                        className="w-full text-left p-3 rounded-xl neo-brutalism bg-white border-black flex items-center gap-3 active:translate-y-0.5 active:shadow-none"
-                      >
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#ebca7a] border-2 border-black shrink-0" />
-                        <div className="flex-1 overflow-hidden">
-                          <p className="font-heading text-[11px] truncate leading-tight">{w.name}</p>
-                          <p className="text-[9px] font-bold text-gray-400 uppercase">{new Date(log.date).toLocaleDateString()} · {log.time}</p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              <div className="pt-4 border-t-2 border-black/5">
-                <button onClick={() => {setShowArchived(!showArchived);}} className="w-full text-center text-[12px] font-black uppercase underline text-gray-500 mb-4">{showArchived ? 'Ver Activos' : 'Ver Archivados'}</button>
-                <button onClick={() => {onCreateNewCycle(); setIsMenuOpen(false);}} className="w-full bg-black text-white p-4 rounded-xl font-heading text-xs border-2 border-black active:translate-y-1 shadow-[4px_4px_0px_#ebca7a]">+ NUEVO CIRCUITO</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <main className="px-6">
         {children}
@@ -234,20 +155,6 @@ const Layout: React.FC<LayoutProps> = ({
              </div>
             </div>
           )}
-
-          {/* FAB flotante en la esquina inferior izquierda con etiqueta MENÚ */}
-          <div className="fixed bottom-5 left-4 z-[1450] flex flex-col items-center gap-1">
-            <button
-              onClick={() => setIsNavOpen(!isNavOpen)}
-              className="w-14 h-14 neo-brutalism rounded-full flex items-center justify-center border-black shadow-[4px_4px_0px_#000] active:scale-95 bg-[#ebca7a]"
-              aria-label={isNavOpen ? 'Cerrar menú' : 'Abrir menú'}
-            >
-              <KettlebellLogo className="w-8 h-8" kettlebellColor="black" boltColor="#ebca7a" />
-            </button>
-            <span className="font-heading text-[10px] text-black bg-[#ebca7a] px-2 py-0.5 rounded border-2 border-black uppercase font-black">
-              {isNavOpen ? 'Cerrar' : 'Menú'}
-            </span>
-          </div>
         </>
       )}
     </div>
