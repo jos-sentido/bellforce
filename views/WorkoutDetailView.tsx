@@ -123,28 +123,35 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
     setIsAnalyzing(false);
   };
 
-  const handleAddImage = async (file: File) => {
-    const base64 = await new Promise<string>((resolve, reject) => {
-      const r = new FileReader();
-      r.onloadend = () => resolve(r.result as string);
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
-    let ref = base64;
-    if (isCloudinaryConfigured) {
-      setIsUploading(true);
-      try {
-        ref = await uploadImage(base64);
-      } catch (e) {
-        console.error('Cloudinary upload error:', e);
-        ref = base64; // fallback: se mostrará pero no se persistirá
-      } finally {
-        setIsUploading(false);
+  const readAsDataURL = (file: File) => new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onloadend = () => resolve(r.result as string);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+
+  // Sube varias imágenes de una sola vez (carga múltiple).
+  const handleAddImages = async (files: FileList) => {
+    const list = Array.from(files);
+    if (list.length === 0) return;
+    setIsUploading(true);
+    try {
+      const refs: string[] = [];
+      for (const file of list) {
+        const base64 = await readAsDataURL(file);
+        let ref = base64;
+        if (isCloudinaryConfigured) {
+          try { ref = await uploadImage(base64); }
+          catch (e) { console.error('Cloudinary upload error:', e); ref = base64; }
+        }
+        refs.push(ref);
       }
+      const newImgs = [...images, ...refs];
+      setImages(newImgs);
+      reanalyzeAll(newImgs);
+    } finally {
+      setIsUploading(false);
     }
-    const newImgs = [...images, ref];
-    setImages(newImgs);
-    reanalyzeAll(newImgs);
   };
 
   return (
@@ -174,7 +181,7 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
         <textarea disabled={currentLog?.completed} className="w-full bg-white neo-brutalism p-4 rounded-xl text-sm border-2 border-black focus:outline-none min-h-[100px]" value={description} onChange={(e) => setDescription(e.target.value)} />
       </div>
 
-      <div className="space-y-8 pb-48">
+      <div className="space-y-8 pb-12">
         {/* REFERENCIA DE REGISTRO PREVIO */}
         {previousLog && !currentLog?.completed && (
           <div className="bg-[#f0ece2] border-2 border-black rounded-2xl p-5 shadow-[4px_4px_0px_#000] animate-in slide-in-from-top-2">
@@ -215,9 +222,8 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
                 ) : (
                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"></path></svg>
                 )}
-                <input type="file" className="hidden" accept="image/*" disabled={isUploading} onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleAddImage(file);
+                <input type="file" className="hidden" accept="image/*" multiple disabled={isUploading} onChange={(e) => {
+                  if (e.target.files && e.target.files.length) handleAddImages(e.target.files);
                   e.target.value = '';
                 }} />
               </label>
@@ -241,7 +247,12 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
         </div>
 
         {!currentLog?.completed ? (
-          <button onClick={handleComplete} className="w-full neo-brutalism bg-[#77b074] p-5 rounded-2xl font-heading text-xl border-black shadow-lg active:translate-y-1">FINALIZAR SESIÓN</button>
+          <div className="space-y-3">
+            <button onClick={handleComplete} className="w-full neo-brutalism bg-[#77b074] text-white p-5 rounded-2xl font-heading text-xl border-black shadow-[6px_6px_0px_#000] active:translate-y-1 active:shadow-none">FINALIZAR SESIÓN</button>
+            <button onClick={handleSaveDraft} disabled={!hasChanges} className="w-full neo-brutalism bg-white p-3 rounded-2xl font-heading text-xs uppercase border-black disabled:opacity-40 active:translate-y-0.5 active:shadow-none">
+              {hasChanges ? 'Guardar avance' : 'Sin cambios por guardar'}
+            </button>
+          </div>
         ) : (
           <div className="space-y-4">
              <button onClick={onRetrain} className="w-full neo-brutalism bg-[#ebca7a] p-5 rounded-2xl font-heading text-xl border-black animate-pulse flex items-center justify-center gap-2">VOLVER A ENTRENAR <BoltIcon className="w-5 h-5" /></button>
@@ -249,33 +260,6 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
           </div>
         )}
       </div>
-
-      {/* BARRA DE CAMBIOS: Z-index elevado y manejadores corregidos */}
-      {hasChanges && !currentLog?.completed && (
-        <div 
-          className="fixed bottom-24 left-4 right-4 max-w-md mx-auto neo-brutalism bg-[#ebca7a] p-3 rounded-2xl flex items-center justify-between z-[2500] shadow-2xl animate-in slide-in-from-bottom-2 border-black"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="pl-2">
-            <p className="text-[12px] font-black uppercase leading-none text-black">Cambios detectados</p>
-            <p className="text-[10px] opacity-70 font-bold text-black">Sesión en curso</p>
-          </div>
-          <div className="flex gap-2">
-            <button 
-              onClick={handleDiscardChanges} 
-              className="bg-white border-2 border-black px-4 py-2 rounded-lg text-[11px] font-black shadow-sm active:translate-y-0.5 active:shadow-none cursor-pointer"
-            >
-              DESCARTAR
-            </button>
-            <button 
-              onClick={(e) => handleSaveDraft(e)} 
-              className="bg-black text-white px-5 py-2 rounded-lg text-[11px] font-black shadow-sm active:translate-y-0.5 active:shadow-none cursor-pointer"
-            >
-              GUARDAR
-            </button>
-          </div>
-        </div>
-      )}
 
       {previewImage && (
         <div className="fixed inset-0 z-[3000] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
