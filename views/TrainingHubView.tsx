@@ -36,7 +36,7 @@ const TrainingHubView: React.FC<TrainingHubViewProps> = ({
         <div 
           onClick={activeCycle ? onSelectCircuit : onNewCircuit}
           className={`neo-brutalism p-6 rounded-3xl cursor-pointer transition-all active:translate-y-2 active:shadow-none relative overflow-hidden ${
-            activeCycle ? 'bg-black text-white' : 'bg-gray-100 text-gray-400 border-dashed opacity-80'
+            activeCycle ? 'bg-black text-white shadow-[8px_8px_0px_#ebca7a]' : 'bg-gray-100 text-gray-400 border-dashed opacity-80'
           }`}
         >
           <div className="relative z-10">

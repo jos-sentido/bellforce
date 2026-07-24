@@ -185,11 +185,6 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                 <div title={w.isPublic ? 'Visible para todos' : 'Solo tú'} className="w-7 h-7 flex items-center justify-center bg-white border-2 border-black rounded-md shadow-[2px_2px_0px_#000]">
                   {w.isPublic ? <EyeIcon className="w-4 h-4 text-[#c6a256]" /> : <EyeOffIcon className="w-4 h-4 text-gray-400" />}
                 </div>
-                {onQuickStart && (
-                  <button onClick={() => onQuickStart(w)} title="Entrenar ahora" className="w-7 h-7 flex items-center justify-center bg-black text-[#ebca7a] border-2 border-black rounded-md shadow-[2px_2px_0px_#000] active:translate-y-0.5 active:shadow-none hover:bg-gray-900">
-                    <BoltIcon className="w-4 h-4" />
-                  </button>
-                )}
                 {(userRole === 'admin' || w.createdBy === userId) && (
                   <>
                     <button onClick={() => { setEditingW(w); setFormW(w); }} title="Editar" className="w-7 h-7 flex items-center justify-center bg-white border-2 border-black rounded-md shadow-[2px_2px_0px_#000] active:translate-y-0.5 active:shadow-none hover:bg-[#ebca7a]">
@@ -213,7 +208,14 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                 </p>
               </div>
               <p className="text-[11px] text-gray-600 line-clamp-1 mb-4 italic">{w.description}</p>
-              <button onClick={() => setPreviewW(w)} className="w-full neo-brutalism bg-white p-2 rounded-lg font-heading text-[12px] border-black hover:bg-gray-50">DETALLES</button>
+              <div className="flex gap-2">
+                <button onClick={() => setPreviewW(w)} className="flex-1 neo-brutalism bg-white p-2.5 rounded-lg font-heading text-[11px] uppercase border-black hover:bg-gray-50">Detalles</button>
+                {onQuickStart && (
+                  <button onClick={() => onQuickStart(w)} className="flex-1 neo-brutalism bg-black text-[#ebca7a] p-2.5 rounded-lg font-heading text-[11px] uppercase border-black flex items-center justify-center gap-1.5 active:translate-y-0.5 active:shadow-none shadow-[3px_3px_0px_#ebca7a]">
+                    <BoltIcon className="w-4 h-4" /> Entrenar
+                  </button>
+                )}
+              </div>
             </div>
           );
         }) : filteredT.map(t => (
@@ -243,7 +245,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
             </div>
             <div className="flex gap-2">
                <button onClick={() => setPreviewT(t)} className="flex-1 neo-brutalism bg-white p-3 rounded-xl font-heading text-[11px] uppercase border-black">Explorar</button>
-               <button onClick={() => onStartTemplate(t)} className="flex-1 neo-brutalism bg-black text-white p-3 rounded-xl font-heading text-[11px] uppercase border-black">Entrenar</button>
+               <button onClick={() => onStartTemplate(t)} className="flex-1 neo-brutalism bg-black text-white p-3 rounded-xl font-heading text-[11px] uppercase border-black shadow-[3px_3px_0px_#ebca7a]">Entrenar</button>
             </div>
           </div>
         ))}
