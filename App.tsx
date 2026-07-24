@@ -104,6 +104,13 @@ const App: React.FC = () => {
     }).filter(w => !!w) as Workout[];
   }, [currentCycle, state.library]);
 
+  const nextWorkoutName = useMemo(() => {
+    if (!currentCycle) return null;
+    const logs = currentCycle.logs || [];
+    const next = activeWorkouts.find(w => !logs.find(l => l.workoutId === w.id)?.completed);
+    return next?.name || null;
+  }, [currentCycle, activeWorkouts]);
+
   const handleTabChange = useCallback((tab: any) => {
     setActiveTab(tab);
     setSelectedWorkout(null);
@@ -478,6 +485,7 @@ const App: React.FC = () => {
               completedCount={currentCycle?.logs.filter(l => l.completed).length || 0}
               totalWorkouts={currentCycle?.workoutIds?.length || 0}
               greeting={buildGreeting(state.currentUser.name, userCycles)}
+              nextWorkoutName={nextWorkoutName}
               onSelectCircuit={() => setIsViewingActiveCircuit(true)}
               onSelectStandalone={() => setIsPickingStandalone(true)}
               onNewCircuit={() => setShowTemplatePicker(true)}

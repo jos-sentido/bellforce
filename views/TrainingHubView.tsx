@@ -8,6 +8,7 @@ interface TrainingHubViewProps {
   completedCount: number;
   totalWorkouts: number;
   greeting: string;
+  nextWorkoutName: string | null;
   onSelectCircuit: () => void;
   onSelectStandalone: () => void;
   onNewCircuit: () => void;
@@ -18,6 +19,7 @@ const TrainingHubView: React.FC<TrainingHubViewProps> = ({
   completedCount,
   totalWorkouts,
   greeting,
+  nextWorkoutName,
   onSelectCircuit,
   onSelectStandalone,
   onNewCircuit
@@ -58,7 +60,14 @@ const TrainingHubView: React.FC<TrainingHubViewProps> = ({
                 <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
                   <div className="h-full bg-[#77b074]" style={{ width: `${progressPercent}%` }} />
                 </div>
-                <p className="text-[12px] font-bold uppercase opacity-60">Continuar con la secuencia programada</p>
+                {nextWorkoutName ? (
+                  <div className="bg-white/10 rounded-xl p-3 border border-white/15">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-[#ebca7a] mb-0.5">Siguiente workout</p>
+                    <p className="font-heading text-base leading-tight text-white">{nextWorkoutName}</p>
+                  </div>
+                ) : (
+                  <p className="text-[12px] font-bold uppercase opacity-60">Continuar con la secuencia programada</p>
+                )}
               </div>
             ) : (
               <p className="text-[12px] font-bold uppercase underline">Pulsa para elegir una plantilla</p>
