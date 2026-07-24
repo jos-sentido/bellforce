@@ -1,24 +1,29 @@
 
 import React, { useMemo, useState } from 'react';
 import { CircuitCycle, Workout, WorkoutLog } from '../types';
-import { CameraIcon } from '../components/icons';
+import { CameraIcon, ArchiveIcon } from '../components/icons';
 
 interface HistoryViewProps {
   cycles: CircuitCycle[];
   workouts: Workout[];
   onRetake: (cycle: CircuitCycle) => void;
   onViewLog?: (workout: Workout, log: WorkoutLog) => void;
+  onArchiveCycle?: (id: string) => void;
+  onUnarchiveCycle?: (id: string) => void;
 }
 
 type LogItem = { kind: 'log'; date: string; log: WorkoutLog; cycle: CircuitCycle; workout?: Workout; isStandalone: boolean };
 type DoneItem = { kind: 'circuitDone'; date: string; cycle: CircuitCycle; count: number };
 type Item = LogItem | DoneItem;
 
-const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], onRetake, onViewLog }) => {
+const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], onRetake, onViewLog, onArchiveCycle, onUnarchiveCycle }) => {
   const [search, setSearch] = useState('');
   const [range, setRange] = useState<'all' | '7' | '30'>('all');
   const [source, setSource] = useState<'all' | 'circuit' | 'standalone'>('all');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+
+  const archivedCount = (cycles || []).filter(c => c.isArchived && c.type !== 'standalone').length;
 
   const workoutTypes = useMemo(() => {
     const t = new Set<string>();
@@ -31,6 +36,12 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
   const items: Item[] = useMemo(() => {
     const arr: Item[] = [];
     (cycles || []).forEach(cycle => {
+      // Filtro de archivados: por defecto se ocultan; en modo "archivados" solo esos.
+      if (cycle.type === 'standalone') {
+        if (showArchived) return;
+      } else if (showArchived ? !cycle.isArchived : cycle.isArchived) {
+        return;
+      }
       const logs = (Array.isArray(cycle.logs) ? cycle.logs : []).filter(l => l.completed);
       logs.forEach(log => arr.push({
         kind: 'log', date: log.date, log, cycle,
@@ -43,7 +54,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
       }
     });
     return arr.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [cycles, workouts]);
+  }, [cycles, workouts, showArchived]);
 
   const filtered = useMemo(() => {
     const now = Date.now();
@@ -109,6 +120,11 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
           {([['all', 'Todos'], ['circuit', 'Circuito'], ['standalone', 'Libre']] as const).map(([v, l]) => (
             <button key={v} onClick={() => setSource(v)} className={chip(source === v)}>{l}</button>
           ))}
+          {(archivedCount > 0 || showArchived) && (
+            <button onClick={() => setShowArchived(v => !v)} className={`ml-auto inline-flex items-center gap-1.5 ${chip(showArchived)}`}>
+              <ArchiveIcon className="w-3.5 h-3.5" /> {showArchived ? 'Ver activos' : `Archivados (${archivedCount})`}
+            </button>
+          )}
         </div>
         {workoutTypes.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -143,6 +159,15 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
                         <div className="neo-brutalism bg-[#77b074] text-white rounded-xl border-black p-4 shadow-[3px_3px_0px_#000]">
                           <div className="flex justify-between items-start gap-2 mb-1">
                             <span className="text-[10px] font-black uppercase tracking-wider">Circuito completado</span>
+                            {(onArchiveCycle || onUnarchiveCycle) && (
+                              <button
+                                onClick={() => (item.cycle.isArchived ? onUnarchiveCycle : onArchiveCycle)?.(item.cycle.id)}
+                                title={item.cycle.isArchived ? 'Desarchivar' : 'Archivar'}
+                                className="w-7 h-7 flex items-center justify-center bg-white text-black border-2 border-black rounded-md shadow-[2px_2px_0px_#000] active:translate-y-0.5 active:shadow-none shrink-0"
+                              >
+                                <ArchiveIcon className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                           <h4 className="font-heading text-base leading-tight mb-2">{item.cycle.name}</h4>
                           <div className="flex items-center justify-between">

@@ -38,6 +38,7 @@ export interface Workout {
   history?: WorkoutHistoryEntry[];
   createdBy: string; // ID del usuario
   isPublic: boolean; // Si es visible para todos
+  isArchived?: boolean; // archivado: oculto del listado por defecto
 }
 
 export interface WorkoutLog {

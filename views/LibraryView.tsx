@@ -4,7 +4,7 @@ import { Workout, CircuitTemplate, UserRole, CircuitCycle, EquipmentType } from 
 import { EQUIPMENT_TYPES, EQUIPMENT_LABELS, EQUIPMENT_SHORT_LABELS, formatWeight } from '../constants';
 import { uploadMedia, isCloudinaryConfigured } from '../services/cloudinary';
 import MediaCarousel from '../components/MediaCarousel';
-import { BoltIcon, EyeIcon, EyeOffIcon } from '../components/icons';
+import { BoltIcon, EyeIcon, EyeOffIcon, ArchiveIcon } from '../components/icons';
 
 const EMPTY_WORKOUT_FORM = { name: '', weight: '', weightCount: 1, type: '', equipment: [] as EquipmentType[], duration: '', description: '', isPublic: false };
 
@@ -63,6 +63,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
   const [listEquipmentFilter, setListEquipmentFilter] = useState<EquipmentType | null>(null);
   const [pickerEquipmentFilter, setPickerEquipmentFilter] = useState<EquipmentType | null>(null);
   const [visFilter, setVisFilter] = useState<'all' | 'public' | 'mine'>('all');
+  const [showArchivedW, setShowArchivedW] = useState(false);
 
   const toggleFormEquipment = (eq: EquipmentType) => {
     setFormW(prev => {
@@ -82,11 +83,13 @@ const LibraryView: React.FC<LibraryViewProps> = ({
     visFilter === 'all' || (visFilter === 'public' ? isPublic : createdBy === userId);
 
   const filteredW = library.filter(w =>
+    (showArchivedW ? !!w.isArchived : !w.isArchived) &&
     w.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
     (!listTypeFilter || w.type === listTypeFilter) &&
     (!listEquipmentFilter || w.equipment?.includes(listEquipmentFilter)) &&
     matchesVisibility(w.isPublic, w.createdBy)
   );
+  const archivedWorkoutsCount = library.filter(w => w.isArchived && (w.createdBy === userId || userRole === 'admin')).length;
   const filteredT = templates.filter(t =>
     t.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
     matchesVisibility(t.isPublic, t.createdBy)
@@ -229,6 +232,14 @@ const LibraryView: React.FC<LibraryViewProps> = ({
               {label}
             </button>
           ))}
+          {activeTab === 'workouts' && (archivedWorkoutsCount > 0 || showArchivedW) && (
+            <button
+              onClick={() => setShowArchivedW(v => !v)}
+              className={`ml-auto px-3 py-1.5 rounded-full border-2 border-black text-[10px] font-black uppercase whitespace-nowrap inline-flex items-center gap-1.5 transition-colors ${showArchivedW ? 'bg-black text-white' : 'bg-white text-black'}`}
+            >
+              <ArchiveIcon className="w-3.5 h-3.5" /> {showArchivedW ? 'Ver activos' : `Archivados (${archivedWorkoutsCount})`}
+            </button>
+          )}
         </div>
         {activeTab === 'workouts' && workoutTypes.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -287,6 +298,9 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                 </div>
                 {(userRole === 'admin' || w.createdBy === userId) && (
                   <>
+                    <button onClick={() => onUpdateWorkout({ ...w, isArchived: !w.isArchived })} title={w.isArchived ? 'Desarchivar' : 'Archivar'} className="w-7 h-7 flex items-center justify-center bg-white border-2 border-black rounded-md shadow-[2px_2px_0px_#000] active:translate-y-0.5 active:shadow-none hover:bg-gray-100">
+                      <ArchiveIcon className="w-4 h-4" />
+                    </button>
                     <button onClick={() => { setEditingW(w); setFormW(w); }} title="Editar" className="w-7 h-7 flex items-center justify-center bg-white border-2 border-black rounded-md shadow-[2px_2px_0px_#000] active:translate-y-0.5 active:shadow-none hover:bg-[#ebca7a]">
                       <EditIcon />
                     </button>

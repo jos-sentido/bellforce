@@ -501,10 +501,11 @@ const App: React.FC = () => {
             onNewCycle={() => setShowTemplatePicker(true)}
             onBackToHub={() => setIsViewingActiveCircuit(false)}
             onRestartCycle={handleRestartCycle}
+            onArchiveCycle={handleArchiveCycle}
           />
         );
       case 'history':
-        return <HistoryView cycles={userCycles} workouts={state.library} onRetake={handleRestartCycle} onViewLog={handleViewHistoricalLog} />;
+        return <HistoryView cycles={userCycles} workouts={state.library} onRetake={handleRestartCycle} onViewLog={handleViewHistoricalLog} onArchiveCycle={handleArchiveCycle} onUnarchiveCycle={handleUnarchiveCycle} />;
       case 'stats':
         return <StatsView cycles={userCycles} workouts={state.library} />;
       case 'library':

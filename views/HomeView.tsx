@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { CircuitCycle, Workout } from '../types';
+import { ArchiveIcon } from '../components/icons';
 
 interface HomeViewProps {
   workouts: Workout[];
@@ -10,16 +11,18 @@ interface HomeViewProps {
   onNewCycle: () => void;
   onBackToHub?: () => void;
   onRestartCycle?: (cycle: CircuitCycle) => void;
+  onArchiveCycle?: (id: string) => void;
 }
 
-const HomeView: React.FC<HomeViewProps> = ({ 
-  workouts = [], 
-  currentCycle, 
-  onSelectWorkout, 
-  onManageCircuit, 
-  onNewCycle, 
+const HomeView: React.FC<HomeViewProps> = ({
+  workouts = [],
+  currentCycle,
+  onSelectWorkout,
+  onManageCircuit,
+  onNewCycle,
   onBackToHub,
-  onRestartCycle
+  onRestartCycle,
+  onArchiveCycle
 }) => {
   const currentLogs = Array.isArray(currentCycle.logs) ? currentCycle.logs : [];
   const completedCount = currentLogs.filter(l => l.completed).length;
@@ -34,10 +37,19 @@ const HomeView: React.FC<HomeViewProps> = ({
   return (
     <div className="py-4 text-black animate-in fade-in duration-500">
       <div className="flex items-center gap-2 mb-6">
-        <button onClick={onBackToHub} className="p-2 neo-brutalism bg-white border-black rounded-full active:scale-90">
+        <button onClick={onBackToHub} className="p-2 neo-brutalism bg-white border-black rounded-full active:scale-90 shrink-0">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
         </button>
-        <h2 className="font-heading text-2xl leading-none truncate">{currentCycle.name}</h2>
+        <h2 className="font-heading text-2xl leading-none truncate flex-1">{currentCycle.name}</h2>
+        {onArchiveCycle && (
+          <button
+            onClick={() => { if (confirm('¿Archivar este circuito? Saldrá de tu vista de entrenamiento (podrás verlo en Historial → Archivados).')) { onArchiveCycle(currentCycle.id); onBackToHub?.(); } }}
+            title="Archivar circuito"
+            className="p-2 neo-brutalism bg-white border-black rounded-full active:scale-90 shrink-0"
+          >
+            <ArchiveIcon className="w-4 h-4 text-black" />
+          </button>
+        )}
       </div>
 
       <div className="mb-8">
