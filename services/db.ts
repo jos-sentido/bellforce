@@ -105,6 +105,12 @@ export async function saveLog(cycleId: string, log: WorkoutLog, isStandalone: bo
   await setDoc(doc(db, 'cycles', cycleId, 'logs', logDocId(log, isStandalone)), data);
 }
 
+// Borra un registro. En libre el docId depende de la fecha, así que al editar
+// la fecha hay que borrar el doc anterior antes de guardar el nuevo.
+export async function deleteLog(cycleId: string, log: WorkoutLog, isStandalone: boolean): Promise<void> {
+  await deleteDoc(doc(db, 'cycles', cycleId, 'logs', logDocId(log, isStandalone)));
+}
+
 // ---------- SEED (contenido base GLOBAL / público) ----------
 // Los 15 workouts base y el circuito base son contenido "Bellforce Global":
 // públicos, con ids fijos legacy '1'..'15'. Solo un admin puede crearlos (ver

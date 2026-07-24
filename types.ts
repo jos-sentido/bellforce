@@ -51,6 +51,7 @@ export interface WorkoutLog {
   comments: string;
   completed: boolean;
   aiAnalysisText?: string;
+  isArchived?: boolean; // registro archivado: oculto del historial por defecto
 }
 
 export interface CircuitTemplate {

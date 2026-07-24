@@ -594,7 +594,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
       {/* MODAL: Editor de Workout */}
       {editingW && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white neo-brutalism p-6 rounded-2xl w-full max-w-sm space-y-4 border-black animate-in zoom-in-95 shadow-2xl">
+          <div className="bg-white neo-brutalism p-6 rounded-2xl w-full max-w-sm space-y-4 border-black animate-in zoom-in-95 shadow-2xl max-h-[90vh] overflow-y-auto overscroll-contain">
              <div className="flex justify-between items-start">
                <h3 className="font-heading text-xl">{editingW.id ? 'EDITAR' : 'NUEVO'} WORKOUT</h3>
                {formW.isPublic && <span className="bg-[#ebca7a] text-black text-[9px] font-black uppercase px-2 py-1 rounded border border-black flex items-center gap-1">Global <EyeIcon className="w-3 h-3" /></span>}

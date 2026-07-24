@@ -7,23 +7,22 @@ interface HistoryViewProps {
   cycles: CircuitCycle[];
   workouts: Workout[];
   onRetake: (cycle: CircuitCycle) => void;
-  onViewLog?: (workout: Workout, log: WorkoutLog) => void;
+  onViewLog?: (workout: Workout, log: WorkoutLog, cycleId?: string) => void;
   onArchiveCycle?: (id: string) => void;
   onUnarchiveCycle?: (id: string) => void;
+  onArchiveLog?: (cycleId: string, log: WorkoutLog, archived: boolean) => void;
 }
 
-type LogItem = { kind: 'log'; date: string; log: WorkoutLog; cycle: CircuitCycle; workout?: Workout; isStandalone: boolean };
-type DoneItem = { kind: 'circuitDone'; date: string; cycle: CircuitCycle; count: number };
+type LogItem = { kind: 'log'; date: string; log: WorkoutLog; cycle: CircuitCycle; workout?: Workout; isStandalone: boolean; archived: boolean };
+type DoneItem = { kind: 'circuitDone'; date: string; cycle: CircuitCycle; count: number; archived: boolean };
 type Item = LogItem | DoneItem;
 
-const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], onRetake, onViewLog, onArchiveCycle, onUnarchiveCycle }) => {
+const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], onRetake, onViewLog, onArchiveCycle, onUnarchiveCycle, onArchiveLog }) => {
   const [search, setSearch] = useState('');
   const [range, setRange] = useState<'all' | '7' | '30'>('all');
   const [source, setSource] = useState<'all' | 'circuit' | 'standalone'>('all');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
-
-  const archivedCount = (cycles || []).filter(c => c.isArchived && c.type !== 'standalone').length;
 
   const workoutTypes = useMemo(() => {
     const t = new Set<string>();
@@ -36,30 +35,27 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
   const items: Item[] = useMemo(() => {
     const arr: Item[] = [];
     (cycles || []).forEach(cycle => {
-      // Filtro de archivados: por defecto se ocultan; en modo "archivados" solo esos.
-      if (cycle.type === 'standalone') {
-        if (showArchived) return;
-      } else if (showArchived ? !cycle.isArchived : cycle.isArchived) {
-        return;
-      }
+      const cycleArchived = cycle.type !== 'standalone' && !!cycle.isArchived;
       const logs = (Array.isArray(cycle.logs) ? cycle.logs : []).filter(l => l.completed);
       logs.forEach(log => arr.push({
         kind: 'log', date: log.date, log, cycle,
         workout: workouts.find(w => w.id === log.workoutId),
         isStandalone: cycle.type === 'standalone',
+        archived: !!log.isArchived || cycleArchived,
       }));
       if (cycle.status === 'completed' && cycle.type !== 'standalone') {
         const date = cycle.endDate || (logs.length ? logs[logs.length - 1].date : cycle.startDate);
-        arr.push({ kind: 'circuitDone', date, cycle, count: logs.length });
+        arr.push({ kind: 'circuitDone', date, cycle, count: logs.length, archived: cycleArchived });
       }
     });
     return arr.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [cycles, workouts, showArchived]);
+  }, [cycles, workouts]);
 
   const filtered = useMemo(() => {
     const now = Date.now();
     const cutoff = range === '7' ? now - 7 * 86400000 : range === '30' ? now - 30 * 86400000 : 0;
     return items.filter(it => {
+      if (showArchived ? !it.archived : it.archived) return false;
       if (new Date(it.date).getTime() < cutoff) return false;
       if (it.kind === 'circuitDone') {
         if (source === 'standalone') return false;
@@ -73,7 +69,9 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
       if (search && !(it.workout?.name || '').toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [items, range, source, typeFilter, search]);
+  }, [items, range, source, typeFilter, search, showArchived]);
+
+  const archivedCount = items.filter(it => it.archived).length;
 
   const groups = useMemo(() => {
     const g: { day: string; label: string; entries: Item[] }[] = [];
@@ -184,20 +182,31 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
                   return (
                     <div key={`${item.cycle.id}-${item.log.workoutId}-${idx}`} className="relative">
                       <div className={`absolute -left-6 top-4 w-4 h-4 rounded-full border-2 border-black z-10 ${item.isStandalone ? 'bg-[#ebca7a]' : 'bg-black'}`} />
-                      <button onClick={() => item.workout && onViewLog?.(item.workout, item.log)} className="w-full text-left neo-brutalism bg-white rounded-xl border-black p-4 active:translate-y-0.5 active:shadow-none hover:bg-gray-50 transition-colors">
-                        <div className="flex justify-between items-start gap-2 mb-1.5">
-                          <h4 className="font-heading text-sm leading-tight">{name}</h4>
-                          <span className="text-[10px] font-black text-gray-400 shrink-0">{item.log.time}</span>
-                        </div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border tracking-wide ${item.isStandalone ? 'bg-[#ebca7a]/40 text-black border-black' : 'bg-black text-white border-black'}`}>
-                            {item.isStandalone ? 'Entreno libre' : item.cycle.name}
-                          </span>
-                          {hasPhotos && <span className="text-[9px] bg-gray-100 text-gray-700 px-2 py-0.5 rounded border border-gray-200 font-black uppercase inline-flex items-center gap-1"><CameraIcon className="w-3 h-3" /> Media</span>}
-                          {hasAI && <span className="text-[9px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded border border-blue-200 font-black uppercase">IA</span>}
-                        </div>
-                        {item.log.comments && <p className="text-[11px] italic text-gray-500 mt-2 line-clamp-1">"{item.log.comments}"</p>}
-                      </button>
+                      <div className="neo-brutalism bg-white rounded-xl border-black p-4 relative">
+                        {onArchiveLog && (
+                          <button
+                            onClick={() => onArchiveLog(item.cycle.id, item.log, !item.log.isArchived)}
+                            title={item.log.isArchived ? 'Desarchivar' : 'Archivar'}
+                            className="absolute top-2.5 right-2.5 w-7 h-7 flex items-center justify-center bg-white border-2 border-black rounded-md shadow-[2px_2px_0px_#000] active:translate-y-0.5 active:shadow-none z-10 hover:bg-gray-100"
+                          >
+                            <ArchiveIcon className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <button onClick={() => item.workout && onViewLog?.(item.workout, item.log, item.cycle.id)} className="w-full text-left block active:translate-y-0.5">
+                          <div className="flex justify-between items-start gap-2 mb-1.5 pr-9">
+                            <h4 className="font-heading text-sm leading-tight">{name}</h4>
+                            <span className="text-[10px] font-black text-gray-400 shrink-0">{item.log.time}</span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border tracking-wide ${item.isStandalone ? 'bg-[#ebca7a]/40 text-black border-black' : 'bg-black text-white border-black'}`}>
+                              {item.isStandalone ? 'Entreno libre' : item.cycle.name}
+                            </span>
+                            {hasPhotos && <span className="text-[9px] bg-gray-100 text-gray-700 px-2 py-0.5 rounded border border-gray-200 font-black uppercase inline-flex items-center gap-1"><CameraIcon className="w-3 h-3" /> Media</span>}
+                            {hasAI && <span className="text-[9px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded border border-blue-200 font-black uppercase">IA</span>}
+                          </div>
+                          {item.log.comments && <p className="text-[11px] italic text-gray-500 mt-2 line-clamp-1">"{item.log.comments}"</p>}
+                        </button>
+                      </div>
                     </div>
                   );
                 })}

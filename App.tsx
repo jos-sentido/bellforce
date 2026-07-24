@@ -19,7 +19,7 @@ import {
   loadWorkouts, loadTemplates, loadCycles, seedGlobalBase,
   createWorkout, updateWorkout, deleteWorkout,
   saveTemplate, deleteTemplate,
-  createCycle, updateCycle, saveLog,
+  createCycle, updateCycle, saveLog, deleteLog,
 } from './services/db';
 
 const EMPTY_STATE: AppState = {
@@ -73,6 +73,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'home' | 'history' | 'stats' | 'library' | 'settings'>('home');
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [selectedLog, setSelectedLog] = useState<WorkoutLog | null>(null);
+  const [selectedLogCycleId, setSelectedLogCycleId] = useState<string | null>(null);
   const [activeStandaloneLogDate, setActiveStandaloneLogDate] = useState<string | null>(null);
 
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
@@ -115,6 +116,7 @@ const App: React.FC = () => {
     setActiveTab(tab);
     setSelectedWorkout(null);
     setSelectedLog(null);
+    setSelectedLogCycleId(null);
     setActiveStandaloneLogDate(null);
     setIsStandaloneMode(false);
     setIsPickingStandalone(false);
@@ -250,12 +252,64 @@ const App: React.FC = () => {
     } catch (e) { console.error('createCycle', e); }
   };
 
-  const handleViewHistoricalLog = (workout: Workout, log: WorkoutLog) => {
+  const handleViewHistoricalLog = (workout: Workout, log: WorkoutLog, cycleId?: string) => {
     setSelectedWorkout(workout);
     setSelectedLog(log);
+    setSelectedLogCycleId(cycleId || null);
     setActiveStandaloneLogDate(log.date);
     setIsStandaloneMode(true);
   };
+
+  // Edición de un registro ya entrenado (histórico): peso, imágenes, plan,
+  // comentarios y fecha. Persiste en el ciclo real del registro (no fuerza libre).
+  const handleUpdateHistoricalLog = useCallback((cycleId: string, originalLog: WorkoutLog, updatedLog: WorkoutLog, updatedWeight?: string, updatedDescription?: string) => {
+    const user = state.currentUser;
+    if (!user) return;
+    const cycle = state.cycles.find(c => c.id === cycleId);
+    if (!cycle) return;
+    const isStandalone = cycle.type === 'standalone';
+
+    // 1) Actualizar el workout base (peso/descripción)
+    let newLibrary = state.library;
+    if (updatedWeight !== undefined || updatedDescription !== undefined) {
+      const base = state.library.find(w => w.id === originalLog.workoutId);
+      if (base) {
+        const updated: Workout = {
+          ...base,
+          weight: updatedWeight !== undefined ? updatedWeight : base.weight,
+          description: updatedDescription !== undefined ? updatedDescription : base.description,
+        };
+        newLibrary = state.library.map(w => w.id === base.id ? updated : w);
+        updateWorkout(updated).catch(e => console.error('updateWorkout', e));
+      }
+    }
+
+    // 2) En libre el docId depende de la fecha: si cambió, borra el doc anterior.
+    if (isStandalone && updatedLog.date !== originalLog.date) {
+      deleteLog(cycleId, originalLog, true).catch(e => console.error('deleteLog', e));
+    }
+    saveLog(cycleId, updatedLog, isStandalone).catch(e => console.error('saveLog', e));
+
+    // 3) Peso registrado en el ciclo
+    let newWeights = cycle.workoutWeights;
+    if (updatedWeight !== undefined) {
+      newWeights = { ...(cycle.workoutWeights || {}), [updatedLog.workoutId]: updatedWeight };
+      updateCycle(cycleId, { workoutWeights: newWeights }).catch(e => console.error('updateCycle', e));
+    }
+
+    // 4) Estado local
+    const matches = (l: WorkoutLog) => isStandalone
+      ? (l.workoutId === originalLog.workoutId && l.date === originalLog.date)
+      : (l.workoutId === originalLog.workoutId);
+    setState(prev => ({
+      ...prev,
+      library: newLibrary,
+      cycles: prev.cycles.map(c => c.id === cycleId
+        ? { ...c, workoutWeights: newWeights, logs: (c.logs || []).map(l => matches(l) ? updatedLog : l) }
+        : c),
+    }));
+    setSelectedLog(updatedLog);
+  }, [state.currentUser, state.cycles, state.library]);
 
   const handleCompleteWorkout = useCallback(async (log: WorkoutLog, updatedWeight?: string, updatedDescription?: string, isFinal: boolean = true) => {
     const user = state.currentUser;
@@ -407,6 +461,83 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, cycles: prev.cycles.map(x => x.id === id ? { ...x, isArchived: false } : x) }));
   }, []);
 
+  // Archiva/desarchiva un registro (workout entrenado) dentro de un ciclo.
+  const handleArchiveLog = useCallback((cycleId: string, log: WorkoutLog, archived: boolean) => {
+    const cycle = state.cycles.find(c => c.id === cycleId);
+    if (!cycle) return;
+    const updated = { ...log, isArchived: archived };
+    saveLog(cycleId, updated, cycle.type === 'standalone').catch(e => console.error('saveLog', e));
+    setState(prev => ({
+      ...prev,
+      cycles: prev.cycles.map(c => c.id === cycleId
+        ? { ...c, logs: (c.logs || []).map(l => (l.workoutId === log.workoutId && l.date === log.date) ? updated : l) }
+        : c),
+    }));
+  }, [state.cycles]);
+
+  // ---- Botón "atrás" del navegador ----
+  // Cada capa abierta (tab != home, ver circuito, gestionar, elegir libre, modal
+  // de plantillas, workout abierto) suma "profundidad". Retroceder cierra la capa
+  // superior en vez de salir de la app. Sincronizamos con history: cada avance
+  // empuja una entrada; cada retroceso (por botón atrás o por cerrar en la app)
+  // consume/reconciliamos la entrada para no dejar historial desbalanceado.
+  const depth = useMemo(() => {
+    let d = 0;
+    if (activeTab !== 'home') d += 1;
+    if (isViewingActiveCircuit) d += 1;
+    if (isPickingStandalone) d += 1;
+    if (isManagingCircuit) d += 1;
+    if (showTemplatePicker) d += 1;
+    if (selectedWorkout) d += 1;
+    return d;
+  }, [activeTab, isViewingActiveCircuit, isPickingStandalone, isManagingCircuit, showTemplatePicker, selectedWorkout]);
+
+  const goBack = useCallback(() => {
+    if (selectedWorkout) { setSelectedWorkout(null); setSelectedLog(null); setSelectedLogCycleId(null); setIsStandaloneMode(false); return; }
+    if (showTemplatePicker || previewTemplate) { setShowTemplatePicker(false); setPreviewTemplate(null); return; }
+    if (isManagingCircuit) { setIsManagingCircuit(false); return; }
+    if (isPickingStandalone) { setIsPickingStandalone(false); return; }
+    if (isViewingActiveCircuit) { setIsViewingActiveCircuit(false); return; }
+    if (activeTab !== 'home') { setActiveTab('home'); return; }
+  }, [selectedWorkout, showTemplatePicker, previewTemplate, isManagingCircuit, isPickingStandalone, isViewingActiveCircuit, activeTab]);
+
+  const depthRef = useRef(0);
+  const goBackRef = useRef(goBack);
+  goBackRef.current = goBack;
+  const canGoBackRef = useRef(depth > 0);
+  canGoBackRef.current = depth > 0;
+  const popConsumedRef = useRef(0); // retrocesos ya "pagados" por un popstate del usuario
+  const ignorePopsRef = useRef(0);  // popstates provocados por nuestra propia reconciliación
+
+  useEffect(() => {
+    const delta = depth - depthRef.current;
+    depthRef.current = depth;
+    if (delta > 0) {
+      for (let i = 0; i < delta; i++) window.history.pushState({ bf: true }, '');
+    } else if (delta < 0) {
+      let toDrop = -delta;
+      const paid = Math.min(toDrop, popConsumedRef.current);
+      popConsumedRef.current -= paid;
+      toDrop -= paid;
+      if (toDrop > 0) {
+        ignorePopsRef.current += toDrop;
+        window.history.go(-toDrop);
+      }
+    }
+  }, [depth]);
+
+  useEffect(() => {
+    const onPop = () => {
+      if (ignorePopsRef.current > 0) { ignorePopsRef.current -= 1; return; }
+      if (canGoBackRef.current) {
+        popConsumedRef.current += 1;
+        goBackRef.current();
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
   const renderContent = () => {
     if (authLoading) {
       return (
@@ -442,9 +573,12 @@ const App: React.FC = () => {
           workout={latestWorkoutRef}
           currentLog={log}
           previousLog={prevLog}
-          onBack={() => { setSelectedWorkout(null); setSelectedLog(null); setIsStandaloneMode(false); }}
+          onBack={() => { setSelectedWorkout(null); setSelectedLog(null); setSelectedLogCycleId(null); setIsStandaloneMode(false); }}
           onSave={handleCompleteWorkout}
-          onRetrain={() => { setSelectedLog(null); setActiveStandaloneLogDate(null); setIsStandaloneMode(true); }}
+          onRetrain={() => { setSelectedLog(null); setSelectedLogCycleId(null); setActiveStandaloneLogDate(null); setIsStandaloneMode(true); }}
+          onUpdateLog={selectedLog && selectedLogCycleId
+            ? (updatedLog, w, d) => handleUpdateHistoricalLog(selectedLogCycleId, selectedLog, updatedLog, w, d)
+            : undefined}
         />
       );
     }
@@ -505,7 +639,7 @@ const App: React.FC = () => {
           />
         );
       case 'history':
-        return <HistoryView cycles={userCycles} workouts={state.library} onRetake={handleRestartCycle} onViewLog={handleViewHistoricalLog} onArchiveCycle={handleArchiveCycle} onUnarchiveCycle={handleUnarchiveCycle} />;
+        return <HistoryView cycles={userCycles} workouts={state.library} onRetake={handleRestartCycle} onViewLog={handleViewHistoricalLog} onArchiveCycle={handleArchiveCycle} onUnarchiveCycle={handleUnarchiveCycle} onArchiveLog={handleArchiveLog} />;
       case 'stats':
         return <StatsView cycles={userCycles} workouts={state.library} />;
       case 'library':
