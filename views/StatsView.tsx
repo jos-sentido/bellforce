@@ -2,6 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { CircuitCycle, Workout, WorkoutLog } from '../types';
 import { analyzeGlobalPerformance, analyzeComparativePerformance } from '../services/geminiService';
+import BarChart from '../components/BarChart';
 
 interface StatsViewProps {
   cycles: CircuitCycle[];
@@ -41,6 +42,34 @@ const StatsView: React.FC<StatsViewProps> = ({ cycles = [], workouts = [] }) => 
 
     return logs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [cycles, workouts, range]);
+
+  // Datos para las gráficas: buckets por día (7 días) o por semana (30d/todo).
+  const chartData = useMemo(() => {
+    const now = new Date();
+    const buckets: { label: string; start: number; end: number }[] = [];
+    if (range === '7days') {
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
+        buckets.push({ label: d.toLocaleDateString('es-MX', { weekday: 'short' }).slice(0, 2), start: d.getTime(), end: d.getTime() + 86400000 });
+      }
+    } else {
+      const weeks = range === '30days' ? 5 : 8;
+      const sow = new Date(now); sow.setHours(0, 0, 0, 0);
+      sow.setDate(sow.getDate() - ((sow.getDay() + 6) % 7)); // lunes de esta semana
+      for (let i = weeks - 1; i >= 0; i--) {
+        const s = new Date(sow); s.setDate(s.getDate() - i * 7);
+        buckets.push({ label: s.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }).replace('.', ''), start: s.getTime(), end: s.getTime() + 7 * 86400000 });
+      }
+    }
+    return buckets.map(b => {
+      const inB = filteredLogs.filter(l => { const t = new Date(l.date).getTime(); return t >= b.start && t < b.end; });
+      const weights = inB.map(l => parseFloat((l.workoutWeight || '').replace(/[^0-9.]/g, ''))).filter(v => v > 0);
+      const avg = weights.length ? weights.reduce((a, c) => a + c, 0) / weights.length : 0;
+      return { label: b.label, sessions: inB.length, avgWeight: avg };
+    });
+  }, [filteredLogs, range]);
+
+  const hasChartData = chartData.some(d => d.sessions > 0);
 
   // Selected Cycle for Analysis (for Circuits tab)
   const selectedCycle = useMemo(() => 
@@ -137,7 +166,7 @@ const StatsView: React.FC<StatsViewProps> = ({ cycles = [], workouts = [] }) => 
             ))}
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-white neo-brutalism p-4 rounded-2xl text-center">
               <p className="text-[11px] font-bold text-gray-400 uppercase mb-1">Sesiones</p>
               <p className="font-heading text-3xl">{filteredLogs.length}</p>
@@ -148,7 +177,28 @@ const StatsView: React.FC<StatsViewProps> = ({ cycles = [], workouts = [] }) => 
             </div>
           </div>
 
-          <button 
+          {/* GRÁFICAS DE PROGRESO */}
+          {hasChartData ? (
+            <div className="space-y-4 mb-8">
+              <div className="bg-white neo-brutalism p-4 rounded-2xl border-black">
+                <p className="font-heading text-xs uppercase mb-3">Sesiones {range === '7days' ? 'por día' : 'por semana'}</p>
+                <BarChart data={chartData.map(d => ({ label: d.label, value: d.sessions }))} />
+              </div>
+              <div className="bg-white neo-brutalism p-4 rounded-2xl border-black">
+                <p className="font-heading text-xs uppercase mb-3">Carga promedio (kg)</p>
+                <BarChart
+                  color="#77b074"
+                  data={chartData.map(d => ({ label: d.label, value: Math.round(d.avgWeight), display: d.avgWeight ? String(Math.round(d.avgWeight)) : '' }))}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 mb-8 neo-brutalism bg-white/50 rounded-2xl border-dashed border-black/20">
+              <p className="font-black uppercase text-[11px] text-gray-400 tracking-widest">Sin datos para graficar en este periodo</p>
+            </div>
+          )}
+
+          <button
             onClick={handleGeneratePeriodReport}
             disabled={isLoading || filteredLogs.length === 0}
             className="w-full neo-brutalism bg-[#ebca7a] p-6 rounded-2xl font-heading text-lg flex flex-col items-center gap-2 group hover:bg-[#d8b86a] transition-colors mb-8 disabled:opacity-50"
