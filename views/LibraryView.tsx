@@ -1,12 +1,12 @@
 
 import React, { useState, useMemo } from 'react';
 import { Workout, CircuitTemplate, UserRole, CircuitCycle, EquipmentType } from '../types';
-import { EQUIPMENT_TYPES, EQUIPMENT_LABELS, EQUIPMENT_SHORT_LABELS } from '../constants';
+import { EQUIPMENT_TYPES, EQUIPMENT_LABELS, EQUIPMENT_SHORT_LABELS, formatWeight } from '../constants';
 import { uploadMedia, isCloudinaryConfigured } from '../services/cloudinary';
 import MediaCarousel from '../components/MediaCarousel';
 import { BoltIcon, EyeIcon, EyeOffIcon } from '../components/icons';
 
-const EMPTY_WORKOUT_FORM = { name: '', weight: '', type: '', equipment: [] as EquipmentType[], duration: '', description: '', isPublic: false };
+const EMPTY_WORKOUT_FORM = { name: '', weight: '', weightCount: 1, type: '', equipment: [] as EquipmentType[], duration: '', description: '', isPublic: false };
 
 const EquipmentBadges: React.FC<{ equipment?: EquipmentType[], className?: string }> = ({ equipment, className = '' }) => {
   if (!equipment || equipment.length === 0) return null;
@@ -304,7 +304,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                     {isMyPublic ? 'TU CONTENIDO PÚBLICO' : isMyPrivate ? 'TU ENTRENAMIENTO PRIVADO' : 'BELLFORCE GLOBAL'}
                   </span>
                   <span className="text-gray-400">•</span>
-                  <span className="text-gray-600 whitespace-nowrap">{w.weight}</span>
+                  <span className="text-gray-600 whitespace-nowrap">{formatWeight(w.weight, w.weightCount)}</span>
                   <EquipmentBadges equipment={w.equipment} />
                 </p>
               </div>
@@ -377,7 +377,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                      <span className="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-[11px] font-black shrink-0">{idx + 1}</span>
                      <div className="flex-1">
                        <p className="text-[12px] font-black uppercase leading-tight">{w?.name || 'Cargando...'}</p>
-                       <p className="text-[10px] text-gray-600 font-bold uppercase flex items-center gap-1.5">{w?.weight} • {w?.type}<EquipmentBadges equipment={w?.equipment} /></p>
+                       <p className="text-[10px] text-gray-600 font-bold uppercase flex items-center gap-1.5">{formatWeight(w?.weight, w?.weightCount)} • {w?.type}<EquipmentBadges equipment={w?.equipment} /></p>
                      </div>
                    </div>
                  );
@@ -409,7 +409,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                 )}
                 <section>
                   <div className="flex gap-2 mb-3 flex-wrap">
-                    <span className="bg-[#ebca7a] text-black px-2 py-1 rounded text-[11px] font-bold border border-black">{previewW.weight}</span>
+                    <span className="bg-[#ebca7a] text-black px-2 py-1 rounded text-[11px] font-bold border border-black">{formatWeight(previewW.weight, previewW.weightCount)}</span>
                     <span className="bg-black text-white px-2 py-1 rounded text-[11px] font-bold border border-black">{previewW.type}</span>
                     {(previewW.equipment || []).map(eq => (
                       <span key={eq} className="bg-white text-black px-2 py-1 rounded text-[11px] font-bold border border-black">{EQUIPMENT_LABELS[eq]}</span>
@@ -561,7 +561,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                     {formT.workoutIds.includes(w.id) && <div className="absolute top-0 right-0 bg-[#ebca7a] px-1.5 py-0.5 border-l border-b border-black text-[6px] font-black uppercase">En secuencia</div>}
                     <div>
                       <h4 className="font-heading text-[12px] text-black leading-tight">{w.name}</h4>
-                      <p className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1.5">{w.weight} • {w.type}<EquipmentBadges equipment={w.equipment} /></p>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1.5">{formatWeight(w.weight, w.weightCount)} • {w.type}<EquipmentBadges equipment={w.equipment} /></p>
                     </div>
                     <div className="w-6 h-6 rounded-full border border-black bg-white flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors">
                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4"></path></svg>
@@ -599,15 +599,23 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                 <label className="text-[11px] font-black text-gray-700 uppercase ml-1">Nombre</label>
                 <input type="text" className="w-full p-3 neo-brutalism rounded-lg text-sm focus:outline-none border-black bg-white text-black font-bold" value={formW.name} onChange={e => setFormW({...formW, name: e.target.value})} />
              </div>
-             <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[11px] font-black text-gray-700 uppercase ml-1">Peso</label>
-                  <input type="text" className="w-full p-3 neo-brutalism rounded-lg text-sm focus:outline-none border-black bg-white text-black font-bold" value={formW.weight} onChange={e => setFormW({...formW, weight: e.target.value})} />
+             <div className="space-y-1">
+                <label className="text-[11px] font-black text-gray-700 uppercase ml-1">Peso (por pesa)</label>
+                <div className="flex gap-2">
+                  <input type="text" placeholder="ej. 24 kg" className="flex-1 min-w-0 p-3 neo-brutalism rounded-lg text-sm focus:outline-none border-black bg-white text-black font-bold" value={formW.weight} onChange={e => setFormW({...formW, weight: e.target.value})} />
+                  <div className="flex neo-brutalism rounded-lg overflow-hidden border-black shrink-0">
+                    {[1, 2].map(n => (
+                      <button type="button" key={n} onClick={() => setFormW({ ...formW, weightCount: n })} className={`px-3.5 text-[13px] font-black transition-colors ${(formW.weightCount || 1) === n ? 'bg-black text-white' : 'bg-white text-black'}`}>×{n}</button>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[11px] font-black text-gray-700 uppercase ml-1">Tipo</label>
-                  <input type="text" className="w-full p-3 neo-brutalism rounded-lg text-sm focus:outline-none border-black bg-white text-black font-bold" value={formW.type} onChange={e => setFormW({...formW, type: e.target.value})} />
-                </div>
+                {(formW.weightCount || 1) >= 2 && (
+                  <p className="text-[10px] text-gray-500 font-bold ml-1">Doble pesa: {formatWeight(formW.weight, 2) || '2 pesas'} en total por lado</p>
+                )}
+             </div>
+             <div className="space-y-1">
+                <label className="text-[11px] font-black text-gray-700 uppercase ml-1">Tipo</label>
+                <input type="text" className="w-full p-3 neo-brutalism rounded-lg text-sm focus:outline-none border-black bg-white text-black font-bold" value={formW.type} onChange={e => setFormW({...formW, type: e.target.value})} />
              </div>
              <div className="space-y-1">
                 <label className="text-[11px] font-black text-gray-700 uppercase ml-1">Pesas usadas</label>

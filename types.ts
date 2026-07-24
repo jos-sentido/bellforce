@@ -28,7 +28,8 @@ export interface MediaItem {
 export interface Workout {
   id: string;
   name: string;
-  weight: string;
+  weight: string; // peso POR pesa (ej. "24 kg"); si son 2, es el peso de cada una
+  weightCount?: number; // número de pesas: 1 (default) o 2 (doble); permite "2 × 24 kg"
   type: string;
   equipment?: EquipmentType[]; // pesas usadas: kettlebell, dumbbell, barbell (puede ser mixto)
   duration: string;

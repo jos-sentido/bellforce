@@ -213,3 +213,9 @@ export function describeEquipment(equipment?: EquipmentType[]): string {
   if (labels.length === 1) return labels[0];
   return `${labels.slice(0, -1).join(", ")} y ${labels[labels.length - 1]} (entrenamiento mixto)`;
 }
+
+// Muestra el peso considerando si son 1 o 2 pesas: "24 kg" o "2 × 24 kg".
+export function formatWeight(weight?: string, weightCount?: number): string {
+  if (!weight) return weight || '';
+  return weightCount && weightCount >= 2 ? `2 × ${weight}` : weight;
+}

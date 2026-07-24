@@ -170,6 +170,7 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
           <div className="neo-brutalism bg-[#ebca7a] px-3 py-1 rounded-full flex items-center gap-2 border-2 border-black">
             <span className="text-[11px] font-bold text-black opacity-70">PESO:</span>
             <input disabled={currentLog?.completed} className="bg-transparent font-heading text-xs w-16 focus:outline-none" value={weight} onChange={(e) => setWeight(e.target.value)} />
+            {(workout.weightCount || 1) >= 2 && <span className="text-[11px] font-black text-black">× 2</span>}
           </div>
           <span className="bg-black text-white text-[11px] px-3 py-1.5 rounded-full font-bold uppercase">{workout.type}</span>
           {(workout.equipment || []).map(eq => (

@@ -1,6 +1,6 @@
 
 import { Workout, WorkoutLog, CircuitCycle } from "../types";
-import { describeEquipment } from "../constants";
+import { describeEquipment, formatWeight } from "../constants";
 
 // Modelos centralizados. Cambiar aquí si tu API key soporta versiones más nuevas.
 const MODEL_FLASH = "gemini-2.5-flash";
@@ -36,7 +36,7 @@ export async function analyzeWorkoutPerformance(images: string[], workout: Worko
         Nombre: ${workout.name}
         Tipo: ${workout.type}
         Descripción/Rutina: ${workout.description}
-        Peso utilizado: ${workout.weight}
+        Peso utilizado: ${formatWeight(workout.weight, workout.weightCount)}${(workout.weightCount || 1) >= 2 ? ' (doble pesa: una en cada mano, ese peso es por pesa)' : ''}
 
         INSTRUCCIONES DE FORMATO (CRÍTICO):
         1. Entrega la respuesta estrictamente en FORMATO DE TEXTO PLANO (TXT).
