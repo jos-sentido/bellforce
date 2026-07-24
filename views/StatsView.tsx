@@ -104,6 +104,32 @@ const StatsView: React.FC<StatsViewProps> = ({ cycles = [], workouts = [] }) => 
     };
   }, [selectedCycle, workouts]);
 
+  // Resumen general de todos los circuitos (completados + activo), por orden.
+  const circuitsOverview = useMemo(() => {
+    return (cycles || []).filter(c => c.type !== 'standalone')
+      .slice().sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+      .map((c, i) => {
+        const completed = (Array.isArray(c.logs) ? c.logs : []).filter(l => l.completed);
+        const weights = completed
+          .map(l => parseFloat(workouts.find(w => w.id === l.workoutId)?.weight.replace(/[^0-9.]/g, '') || '0'))
+          .filter(v => v > 0);
+        const avg = weights.length ? weights.reduce((a, b) => a + b, 0) / weights.length : 0;
+        return { id: c.id, name: c.name, index: i + 1, avgWeight: avg, completedCount: completed.length, total: (c.workoutIds || []).length, status: c.status };
+      });
+  }, [cycles, workouts]);
+
+  // Carga por sesión dentro del circuito seleccionado (progresión interna).
+  const selectedCycleChart = useMemo(() => {
+    if (!selectedCycle) return [];
+    const completed = (Array.isArray(selectedCycle.logs) ? selectedCycle.logs : [])
+      .filter(l => l.completed)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return completed.map((l, i) => {
+      const val = parseFloat(workouts.find(x => x.id === l.workoutId)?.weight.replace(/[^0-9.]/g, '') || '0');
+      return { label: `#${i + 1}`, value: Math.round(val), display: val ? String(Math.round(val)) : '' };
+    });
+  }, [selectedCycle, workouts]);
+
   const handleGeneratePeriodReport = async () => {
     if (filteredLogs.length === 0) return;
     setIsLoading(true);
@@ -218,9 +244,22 @@ const StatsView: React.FC<StatsViewProps> = ({ cycles = [], workouts = [] }) => 
         </>
       ) : (
         <>
+          {/* NIVEL GENERAL: progresión entre circuitos */}
+          {circuitsOverview.length > 0 && (
+            <div className="bg-white neo-brutalism p-4 rounded-2xl border-black mb-6">
+              <p className="font-heading text-xs uppercase">Nivel general</p>
+              <p className="text-[10px] text-gray-500 font-bold mb-3 uppercase">Carga promedio por circuito</p>
+              <BarChart data={circuitsOverview.map(c => ({ label: `#${c.index}`, value: Math.round(c.avgWeight), display: c.avgWeight ? String(Math.round(c.avgWeight)) : '' }))} />
+              <div className="flex justify-between mt-3 text-[10px] font-black uppercase text-gray-500">
+                <span>{circuitsOverview.filter(c => c.status === 'completed').length} completados</span>
+                <span>{circuitsOverview.length} en total</span>
+              </div>
+            </div>
+          )}
+
           {/* Selector de Circuito */}
           <div className="mb-6">
-            <label className="text-[11px] font-black uppercase text-gray-400 block mb-2">Seleccionar Circuito para analizar</label>
+            <label className="text-[11px] font-black uppercase text-gray-400 block mb-2">Abrir circuito para ver sus métricas</label>
             <select 
               value={selectedCycleId}
               onChange={(e) => setSelectedCycleId(e.target.value)}
@@ -248,6 +287,13 @@ const StatsView: React.FC<StatsViewProps> = ({ cycles = [], workouts = [] }) => 
                 <p className="text-[10px] font-bold text-gray-400 uppercase">Frecuencia</p>
                 <p className="font-heading text-xl">{cycleStats.avgFreq}d</p>
               </div>
+            </div>
+          )}
+
+          {selectedCycleChart.length > 0 && (
+            <div className="bg-white neo-brutalism p-4 rounded-2xl border-black mb-8">
+              <p className="font-heading text-xs uppercase mb-3">Carga por sesión en este circuito</p>
+              <BarChart color="#77b074" data={selectedCycleChart} />
             </div>
           )}
 
