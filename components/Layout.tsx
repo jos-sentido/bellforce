@@ -202,9 +202,10 @@ const Layout: React.FC<LayoutProps> = ({
 
       {isUserLoggedIn && (
         <>
-          {/* Menú de navegación FULL SCREEN */}
+          {/* Menú de navegación FULL SCREEN (fondo blur uniforme) */}
           {isNavOpen && (
-            <div className="fixed inset-0 z-[1400] bg-black/20 backdrop-blur-lg flex flex-col animate-in fade-in duration-200 max-w-md mx-auto">
+            <div className="fixed inset-0 z-[1400] bg-black/10 backdrop-blur-2xl flex flex-col animate-in fade-in duration-200">
+             <div className="w-full max-w-md mx-auto flex flex-col h-full">
               <div className="flex items-center justify-between p-6">
                 <div className="flex items-center gap-2">
                   <KettlebellLogo className="w-8 h-8" kettlebellColor="black" boltColor="#ebca7a" />
@@ -230,6 +231,7 @@ const Layout: React.FC<LayoutProps> = ({
                   );
                 })}
               </div>
+             </div>
             </div>
           )}
 
