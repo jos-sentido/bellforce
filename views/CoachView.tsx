@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CoachMessage, Mission, MissionCapacity, DailyMetric } from '../types';
-import { extractGarminMetrics } from '../services/coachService';
+import { extractStatsMetrics } from '../services/coachService';
 import { uploadImage, isCloudinaryConfigured } from '../services/cloudinary';
 
 interface CoachViewProps {
@@ -57,8 +57,6 @@ const CoachView: React.FC<CoachViewProps> = ({
   onSaveMission, onUpdateMission, onDeleteMission, onAppendCoachNote,
 }) => {
   const [input, setInput] = useState('');
-  const [pendingImages, setPendingImages] = useState<string[]>([]);
-  const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -69,9 +67,9 @@ const CoachView: React.FC<CoachViewProps> = ({
   const [mVictory, setMVictory] = useState('');
   const [mWeeks, setMWeeks] = useState('');
 
-  // Flujo Garmin: extracción → confirmación → guardado.
-  const [garminBusy, setGarminBusy] = useState(false);
-  const [garminDraft, setGarminDraft] = useState<Partial<DailyMetric> | null>(null);
+  // Flujo de estadísticas: extracción → confirmación → guardado.
+  const [statsBusy, setStatsBusy] = useState(false);
+  const [statsDraft, setStatsDraft] = useState<Partial<DailyMetric> | null>(null);
 
   const activeMissions = missions.filter(m => m.status === 'active');
 
@@ -79,40 +77,22 @@ const CoachView: React.FC<CoachViewProps> = ({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages.length, sending]);
 
-  const attach = async (files: FileList) => {
-    setUploading(true);
-    try {
-      const refs: string[] = [];
-      for (const f of Array.from(files)) {
-        const b64 = await readFile(f);
-        let ref = b64;
-        if (isCloudinaryConfigured) { try { ref = await uploadImage(b64); } catch { ref = b64; } }
-        refs.push(ref);
-      }
-      setPendingImages(prev => [...prev, ...refs]);
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const send = async () => {
     const text = input.trim();
-    if (!text && pendingImages.length === 0) return;
-    if (sending) return;
-    const imgs = pendingImages;
+    if (!text || sending) return;
     setInput('');
-    setPendingImages([]);
     setSending(true);
     try {
-      await onSend(text || 'Analiza estas imágenes.', imgs.length ? imgs : undefined);
+      await onSend(text);
     } finally {
       setSending(false);
     }
   };
 
-  // Garmin: sube foto, extrae números, abre tarjeta de confirmación.
-  const uploadGarmin = async (files: FileList) => {
-    setGarminBusy(true);
+  // Estadísticas: sube la captura de resultados, extrae números y abre la
+  // tarjeta de confirmación. Guarda la referencia http para analizarla luego.
+  const uploadStats = async (files: FileList) => {
+    setStatsBusy(true);
     try {
       const refs: string[] = [];
       for (const f of Array.from(files)) {
@@ -121,20 +101,30 @@ const CoachView: React.FC<CoachViewProps> = ({
         if (isCloudinaryConfigured) { try { ref = await uploadImage(b64); } catch { ref = b64; } }
         refs.push(ref);
       }
-      const parsed = await extractGarminMetrics(refs);
-      setGarminDraft({ ...parsed, sourceImage: refs.find(r => r.startsWith('http')) });
+      const parsed = await extractStatsMetrics(refs);
+      setStatsDraft({ ...parsed, sourceImage: refs.find(r => r.startsWith('http')) });
     } catch (e) {
-      console.error('garmin extract', e);
-      alert('No pude leer las métricas de la imagen. Inténtalo de nuevo.');
+      console.error('stats extract', e);
+      alert('No pude leer las estadísticas de la imagen. Inténtalo de nuevo.');
     } finally {
-      setGarminBusy(false);
+      setStatsBusy(false);
     }
   };
 
-  const saveGarmin = async () => {
-    if (!garminDraft) return;
-    await onSaveMetric({ date: todayId(), ...garminDraft });
-    setGarminDraft(null);
+  // Guarda las métricas y pide al coach que analice la captura directamente.
+  const saveStats = async () => {
+    if (!statsDraft) return;
+    const img = statsDraft.sourceImage;
+    await onSaveMetric({ date: todayId(), ...statsDraft });
+    setStatsDraft(null);
+    if (img && !sending) {
+      setSending(true);
+      try {
+        await onSend('Subí mis estadísticas de entrenamiento de hoy. Analízalas y dime qué ves en mis tendencias.', [img]);
+      } finally {
+        setSending(false);
+      }
+    }
   };
 
   const addMission = async () => {
@@ -217,7 +207,7 @@ const CoachView: React.FC<CoachViewProps> = ({
         {messages.length === 0 && !sending && (
           <div className="text-center py-8 px-4 neo-brutalism bg-white rounded-2xl border-dashed border-black/30">
             <p className="font-heading text-sm uppercase mb-2">Habla con tu coach</p>
-            <p className="text-[12px] font-bold text-gray-500 leading-relaxed">Ya conoce tu perfil, tus workouts y tu historial. Pregúntale qué toca hoy, sube tu Garmin, o pídele que analice tu última semana.</p>
+            <p className="text-[12px] font-bold text-gray-500 leading-relaxed">Ya conoce tu perfil, tus workouts y tu historial. Pregúntale qué toca hoy, sube tus estadísticas de entrenamiento, o pídele que analice tu última semana.</p>
           </div>
         )}
         {messages.map(m => {
@@ -252,12 +242,12 @@ const CoachView: React.FC<CoachViewProps> = ({
         )}
       </div>
 
-      {/* TARJETA DE CONFIRMACIÓN GARMIN */}
-      {garminDraft && (
-        <div className="fixed inset-0 z-[3000] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setGarminDraft(null)}>
+      {/* TARJETA DE CONFIRMACIÓN DE ESTADÍSTICAS */}
+      {statsDraft && (
+        <div className="fixed inset-0 z-[3000] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setStatsDraft(null)}>
           <div className="bg-white neo-brutalism border-black rounded-2xl p-5 w-full max-w-sm max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h3 className="font-heading text-lg uppercase mb-1">Confirma tu Garmin</h3>
-            <p className="text-[11px] font-bold text-gray-500 mb-4">Revisa y corrige los números antes de guardar.</p>
+            <h3 className="font-heading text-lg uppercase mb-1">Confirma tus estadísticas</h3>
+            <p className="text-[11px] font-bold text-gray-500 mb-4">Revisa y corrige los números que leí de tu captura antes de guardar.</p>
             <div className="grid grid-cols-2 gap-3">
               {GARMIN_FIELDS.map(({ key, label }) => (
                 <div key={key}>
@@ -265,16 +255,16 @@ const CoachView: React.FC<CoachViewProps> = ({
                   <input
                     type="number"
                     inputMode="decimal"
-                    value={(garminDraft as any)[key] ?? ''}
-                    onChange={e => setGarminDraft(d => ({ ...d, [key]: e.target.value === '' ? undefined : parseFloat(e.target.value) }))}
+                    value={(statsDraft as any)[key] ?? ''}
+                    onChange={e => setStatsDraft(d => ({ ...d, [key]: e.target.value === '' ? undefined : parseFloat(e.target.value) }))}
                     className="w-full p-2 border-2 border-black rounded-lg text-sm font-bold focus:outline-none"
                   />
                 </div>
               ))}
             </div>
             <div className="flex gap-2 mt-5">
-              <button onClick={saveGarmin} className="flex-1 neo-brutalism bg-[#77b074] text-white p-3 rounded-xl font-heading text-xs uppercase border-black">Guardar métricas</button>
-              <button onClick={() => setGarminDraft(null)} className="neo-brutalism bg-white p-3 px-4 rounded-xl font-heading text-xs uppercase border-black">Cancelar</button>
+              <button onClick={saveStats} className="flex-1 neo-brutalism bg-[#77b074] text-white p-3 rounded-xl font-heading text-xs uppercase border-black">Guardar y analizar</button>
+              <button onClick={() => setStatsDraft(null)} className="neo-brutalism bg-white p-3 px-4 rounded-xl font-heading text-xs uppercase border-black">Cancelar</button>
             </div>
           </div>
         </div>
@@ -282,34 +272,14 @@ const CoachView: React.FC<CoachViewProps> = ({
 
       {/* COMPOSER */}
       <div className="shrink-0 pt-2 pb-1 bg-[#fdf6e3]">
-        {pendingImages.length > 0 && (
-          <div className="flex gap-2 mb-2 overflow-x-auto">
-            {pendingImages.map((img, i) => (
-              <div key={i} className="relative w-14 h-14 shrink-0">
-                <img src={img} className="w-full h-full object-cover rounded-lg border-2 border-black" />
-                <button onClick={() => setPendingImages(prev => prev.filter((_, x) => x !== i))} className="absolute -top-1 -right-1 bg-white rounded-full border border-black w-5 h-5 text-[10px] font-black">×</button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Fila de herramientas: adjuntar + Garmin */}
-        <div className="flex gap-2 mb-2">
-          <label className="flex-1 h-10 neo-brutalism bg-white rounded-xl border-black flex items-center justify-center gap-1.5 cursor-pointer active:translate-y-0.5">
-            {uploading
-              ? <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-              : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>}
-            <span className="text-[11px] font-black uppercase">Foto</span>
-            <input type="file" accept="image/*" multiple className="hidden" onChange={e => { if (e.target.files?.length) attach(e.target.files); e.target.value = ''; }} />
-          </label>
-          <label className="flex-1 h-10 neo-brutalism bg-[#ebca7a] rounded-xl border-black flex items-center justify-center gap-1.5 cursor-pointer active:translate-y-0.5">
-            {garminBusy
-              ? <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-              : <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 5v5.4l3.5 2.1-.9 1.5L11 13V7h2z"/></svg>}
-            <span className="text-[11px] font-black uppercase">Subir Garmin</span>
-            <input type="file" accept="image/*" multiple className="hidden" disabled={garminBusy} onChange={e => { if (e.target.files?.length) uploadGarmin(e.target.files); e.target.value = ''; }} />
-          </label>
-        </div>
+        {/* Subir estadísticas de entrenamiento (resultados del reloj/app) */}
+        <label className="flex w-full h-10 mb-2 neo-brutalism bg-[#ebca7a] rounded-xl border-black items-center justify-center gap-2 cursor-pointer active:translate-y-0.5">
+          {statsBusy
+            ? <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+            : <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>}
+          <span className="text-[11px] font-black uppercase">{statsBusy ? 'Leyendo…' : 'Subir estadísticas de entrenamiento'}</span>
+          <input type="file" accept="image/*" multiple className="hidden" disabled={statsBusy} onChange={e => { if (e.target.files?.length) uploadStats(e.target.files); e.target.value = ''; }} />
+        </label>
 
         {/* Fila de entrada: textarea grande + enviar */}
         <div className="flex gap-2 items-end">
@@ -321,7 +291,7 @@ const CoachView: React.FC<CoachViewProps> = ({
             rows={2}
             className="flex-1 neo-brutalism bg-white rounded-xl border-black px-3 py-2.5 text-[15px] focus:outline-none resize-none min-h-[52px] max-h-32"
           />
-          <button onClick={send} disabled={sending || (!input.trim() && pendingImages.length === 0)} className="w-12 h-[52px] shrink-0 neo-brutalism bg-black text-white rounded-xl border-black flex items-center justify-center disabled:opacity-40 active:translate-y-0.5">
+          <button onClick={send} disabled={sending || !input.trim()} className="w-12 h-[52px] shrink-0 neo-brutalism bg-black text-white rounded-xl border-black flex items-center justify-center disabled:opacity-40 active:translate-y-0.5">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" /></svg>
           </button>
         </div>

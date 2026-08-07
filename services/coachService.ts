@@ -28,7 +28,7 @@ CÓMO DEBES PENSAR:
 - No generes workouts aleatorios. Cada entrenamiento pertenece a un sistema de progresión.
 - Identifica cuellos de botella, patrones, progresión y recuperación — no solo propongas rutinas nuevas.
 - Cuando propongas un entrenamiento, explica SIEMPRE: qué capacidad desarrolla, por qué se eligió y cómo progresa.
-- Cuando analices Garmin: no sobreinterpretes una sola métrica; busca TENDENCIAS. Prioriza HRV, sueño, carga (Training Load), Training Readiness, VO2, Training Effect y Body Battery en conjunto.
+- Cuando analices sus métricas del reloj/app (Garmin, Apple Watch, Whoop, etc.): no sobreinterpretes una sola métrica; busca TENDENCIAS. Prioriza HRV, sueño, carga, disponibilidad/readiness, VO2, FC en reposo y batería corporal en conjunto.
 - Cuando propongas cambios: haz los mínimos cambios posibles. No reinventes el programa. La prioridad siempre es la CONTINUIDAD. Prefiere una mejora del 2% sostenida durante meses que una mejora rápida imposible de mantener.
 - Si hay una solución sencilla y otra compleja con beneficios similares, recomienda la sencilla.
 - Aprovecha el equipo que el usuario ya tiene antes de sugerir comprar más.
@@ -251,10 +251,12 @@ export async function sendCoachMessage(
   return postClaude({ model: MODEL_FAST, system, messages, maxTokens: 2048 });
 }
 
-// Extrae métricas de una (o varias) capturas de Garmin. Devuelve un objeto
-// parcial de DailyMetric para que el usuario lo confirme antes de guardar.
-export async function extractGarminMetrics(imageRefs: string[]): Promise<Partial<DailyMetric>> {
-  const prompt = `Analiza esta(s) captura(s) de pantalla de un reloj/app Garmin y extrae las métricas numéricas que veas.
+// Extrae métricas de una (o varias) capturas de resultados/estadísticas de
+// entrenamiento (de cualquier reloj o app: Garmin, Apple Watch, Whoop, Coros,
+// Polar, Strava, etc.). Devuelve un objeto parcial de DailyMetric para que el
+// usuario lo confirme antes de guardar.
+export async function extractStatsMetrics(imageRefs: string[]): Promise<Partial<DailyMetric>> {
+  const prompt = `Analiza esta(s) captura(s) de estadísticas/resultados de entrenamiento (de un reloj o app como Garmin, Apple Watch, Whoop, Coros, Polar, Strava, etc.) y extrae las métricas numéricas que veas.
 
 Devuelve EXCLUSIVAMENTE un objeto JSON válido (sin texto adicional, sin markdown, sin \`\`\`) con estas claves (omite las que no aparezcan):
 {
