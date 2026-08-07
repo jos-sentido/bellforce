@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from './firebase';
-import { User, UserRole } from '../types';
+import { User, UserRole, CoachKnowledge } from '../types';
 
 // Correos autorizados como administradores (debe coincidir con ownerEmails()
 // en firestore.rules). El rol lo valida el servidor vía reglas.
@@ -41,6 +41,8 @@ async function ensureProfile(fbUser: FirebaseUser, nameOverride?: string): Promi
       role,
       joinedDate: data.joinedDate || undefined,
       photoURL: data.photoURL || fbUser.photoURL || undefined,
+      coachKnowledge: data.coachKnowledge || undefined,
+      coachNotes: data.coachNotes || undefined,
     };
   }
 
@@ -56,10 +58,14 @@ async function ensureProfile(fbUser: FirebaseUser, nameOverride?: string): Promi
   return { id: fbUser.uid, name: profile.name, email: profile.email, role: desiredRole, joinedDate: profile.joinedDate, photoURL: profile.photoURL || undefined };
 }
 
-// Actualiza el perfil del usuario (nombre y/o foto) en Firestore y en Auth.
-export async function updateUserProfile(uid: string, data: { name?: string; photoURL?: string }): Promise<void> {
+// Actualiza el perfil del usuario en Firestore y (nombre/foto) en Auth.
+// Además de nombre/foto acepta el conocimiento y las notas del coach.
+export async function updateUserProfile(
+  uid: string,
+  data: { name?: string; photoURL?: string; coachKnowledge?: CoachKnowledge; coachNotes?: string },
+): Promise<void> {
   await setDoc(doc(db, 'profiles', uid), data, { merge: true });
-  if (auth.currentUser) {
+  if (auth.currentUser && (data.name !== undefined || data.photoURL !== undefined)) {
     await updateProfile(auth.currentUser, {
       ...(data.name !== undefined ? { displayName: data.name } : {}),
       ...(data.photoURL !== undefined ? { photoURL: data.photoURL } : {}),

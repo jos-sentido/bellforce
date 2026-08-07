@@ -20,47 +20,62 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  try {
-    const { model, prompt, imageRefs } = req.body || {};
-    if (!model || !prompt) {
-      res.status(400).json({ error: "Faltan 'model' y 'prompt'" });
-      return;
-    }
-
-    // Construir el contenido del mensaje del usuario
-    const content: any[] = [];
-
-    // Si hay imágenes, agregarlas como bloques de imagen antes del texto
-    if (Array.isArray(imageRefs)) {
-      for (const ref of imageRefs as string[]) {
-        try {
-          if (ref.startsWith('data:')) {
-            const semicolon = ref.indexOf(';');
-            const comma = ref.indexOf(',');
-            const mediaType = ref.slice(5, semicolon) || 'image/png';
-            const data = ref.slice(comma + 1);
-            content.push({
-              type: 'image',
-              source: { type: 'base64', media_type: mediaType, data },
-            });
-          } else {
-            // Descargar imagen desde URL y convertir a base64
-            const imgRes = await fetch(ref);
-            const buf = Buffer.from(await imgRes.arrayBuffer());
-            const mediaType = imgRes.headers.get('content-type') || 'image/jpeg';
-            content.push({
-              type: 'image',
-              source: { type: 'base64', media_type: mediaType, data: buf.toString('base64') },
-            });
-          }
-        } catch (e) {
-          console.error('No se pudo resolver imagen:', ref, e);
+    // Convierte una referencia de imagen (data URI o URL http) a un bloque
+    // de imagen de Anthropic (source base64).
+    async function toImageBlock(ref: string): Promise<any | null> {
+      try {
+        if (ref.startsWith('data:')) {
+          const semicolon = ref.indexOf(';');
+          const comma = ref.indexOf(',');
+          const mediaType = ref.slice(5, semicolon) || 'image/png';
+          return { type: 'image', source: { type: 'base64', media_type: mediaType, data: ref.slice(comma + 1) } };
         }
+        const imgRes = await fetch(ref);
+        const buf = Buffer.from(await imgRes.arrayBuffer());
+        const mediaType = imgRes.headers.get('content-type') || 'image/jpeg';
+        return { type: 'image', source: { type: 'base64', media_type: mediaType, data: buf.toString('base64') } };
+      } catch (e) {
+        console.error('No se pudo resolver imagen:', ref, e);
+        return null;
       }
     }
 
-    // Agregar el texto del prompt
-    content.push({ type: 'text', text: prompt });
+    const { model, prompt, imageRefs, system, messages, maxTokens } = req.body || {};
+    if (!model || (!prompt && !Array.isArray(messages))) {
+      res.status(400).json({ error: "Faltan 'model' y ('prompt' o 'messages')" });
+      return;
+    }
+
+    // ---- Modo conversación: system + messages (Anthropic nativo) ----
+    // Cada message.content puede ser string o traer message.imageRefs (URLs) que
+    // resolvemos a bloques de imagen del lado del servidor.
+    let anthropicMessages: any[];
+    if (Array.isArray(messages)) {
+      anthropicMessages = [];
+      for (const m of messages) {
+        const parts: any[] = [];
+        if (Array.isArray(m.imageRefs)) {
+          for (const ref of m.imageRefs as string[]) {
+            const block = await toImageBlock(ref);
+            if (block) parts.push(block);
+          }
+        }
+        const textVal = typeof m.content === 'string' ? m.content : (m.text || '');
+        if (textVal) parts.push({ type: 'text', text: textVal });
+        anthropicMessages.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: parts.length ? parts : m.content });
+      }
+    } else {
+      // ---- Modo prompt único (análisis existentes) ----
+      const content: any[] = [];
+      if (Array.isArray(imageRefs)) {
+        for (const ref of imageRefs as string[]) {
+          const block = await toImageBlock(ref);
+          if (block) content.push(block);
+        }
+      }
+      content.push({ type: 'text', text: prompt });
+      anthropicMessages = [{ role: 'user', content }];
+    }
 
     const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -71,8 +86,9 @@ export default async function handler(req: any, res: any) {
       },
       body: JSON.stringify({
         model,
-        max_tokens: 4096,
-        messages: [{ role: 'user', content }],
+        max_tokens: typeof maxTokens === 'number' ? maxTokens : 4096,
+        ...(typeof system === 'string' && system ? { system } : {}),
+        messages: anthropicMessages,
       }),
     });
 

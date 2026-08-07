@@ -1,9 +1,9 @@
 import {
   collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
-  query, where, serverTimestamp, writeBatch,
+  query, where, orderBy, limit as fbLimit, serverTimestamp, writeBatch,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Workout, CircuitTemplate, CircuitCycle, WorkoutLog } from '../types';
+import { Workout, CircuitTemplate, CircuitCycle, WorkoutLog, DailyMetric, Mission, CoachMessage } from '../types';
 
 // ============================================================================
 // Capa de datos Firestore. Colecciones:
@@ -109,6 +109,69 @@ export async function saveLog(cycleId: string, log: WorkoutLog, isStandalone: bo
 // la fecha hay que borrar el doc anterior antes de guardar el nuevo.
 export async function deleteLog(cycleId: string, log: WorkoutLog, isStandalone: boolean): Promise<void> {
   await deleteDoc(doc(db, 'cycles', cycleId, 'logs', logDocId(log, isStandalone)));
+}
+
+// ---------- MÉTRICAS DE SALUD (peso corporal + Garmin) ----------
+// Subcolección profiles/{uid}/metrics/{YYYY-MM-DD}. Un doc por día (merge).
+export async function loadMetrics(uid: string): Promise<DailyMetric[]> {
+  const snap = await getDocs(collection(db, 'profiles', uid, 'metrics'));
+  return snap.docs
+    .map(d => d.data() as DailyMetric)
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export async function saveMetric(uid: string, partial: DailyMetric): Promise<void> {
+  await setDoc(doc(db, 'profiles', uid, 'metrics', partial.date), clean(partial), { merge: true });
+}
+
+// ---------- MISIONES ----------
+export async function loadMissions(uid: string): Promise<Mission[]> {
+  const snap = await getDocs(query(collection(db, 'missions'), where('userId', '==', uid)));
+  return snap.docs.map(d => ({ id: d.id, ...(d.data() as any) } as Mission));
+}
+
+export async function saveMission(m: Mission): Promise<Mission> {
+  const { id, ...data } = m;
+  if (id) {
+    await setDoc(doc(db, 'missions', id), clean(data), { merge: true });
+    return m;
+  }
+  const ref = await addDoc(collection(db, 'missions'), clean({ ...data, createdAt: serverTimestamp() }));
+  return { ...m, id: ref.id };
+}
+
+export async function updateMission(id: string, partial: Partial<Mission>): Promise<void> {
+  const { id: _ignore, ...data } = partial as any;
+  await updateDoc(doc(db, 'missions', id), clean(data));
+}
+
+export async function deleteMission(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'missions', id));
+}
+
+// ---------- CONVERSACIÓN DEL COACH ----------
+// Subcolección profiles/{uid}/coachMessages/{id}, ordenada por createdAt.
+export async function loadCoachMessages(uid: string, max = 50): Promise<CoachMessage[]> {
+  const snap = await getDocs(query(
+    collection(db, 'profiles', uid, 'coachMessages'),
+    orderBy('createdAt', 'desc'),
+    fbLimit(max),
+  ));
+  return snap.docs
+    .map(d => ({ id: d.id, ...(d.data() as any) } as CoachMessage))
+    .reverse(); // cronológico ascendente
+}
+
+export async function appendCoachMessage(uid: string, msg: Omit<CoachMessage, 'id'>): Promise<CoachMessage> {
+  const ref = await addDoc(collection(db, 'profiles', uid, 'coachMessages'), clean(msg));
+  return { ...msg, id: ref.id };
+}
+
+export async function clearCoachMessages(uid: string): Promise<void> {
+  const snap = await getDocs(collection(db, 'profiles', uid, 'coachMessages'));
+  const batch = writeBatch(db);
+  snap.docs.forEach(d => batch.delete(d.ref));
+  await batch.commit();
 }
 
 // ---------- SEED (contenido base GLOBAL / público) ----------

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { KETTLEBELL_CIRCUIT } from './constants';
-import { AppState, CircuitCycle, WorkoutLog, Workout, CircuitTemplate } from './types';
+import { AppState, CircuitCycle, WorkoutLog, Workout, CircuitTemplate, DailyMetric, Mission, CoachMessage, CoachKnowledge } from './types';
 import Layout from './components/Layout';
 import HomeView from './views/HomeView';
 import WorkoutDetailView from './views/WorkoutDetailView';
@@ -13,13 +13,17 @@ import AuthView from './views/AuthView';
 import TrainingHubView from './views/TrainingHubView';
 import StandalonePickerView from './views/StandalonePickerView';
 import SettingsView from './views/SettingsView';
+import CoachView from './views/CoachView';
 import { observeAuth, logout as firebaseLogout, updateUserProfile } from './services/auth';
 import { buildGreeting } from './services/greeting';
+import { buildCoachContext, sendCoachMessage } from './services/coachService';
 import {
   loadWorkouts, loadTemplates, loadCycles, seedGlobalBase,
   createWorkout, updateWorkout, deleteWorkout,
   saveTemplate, deleteTemplate,
   createCycle, updateCycle, saveLog, deleteLog,
+  loadMetrics, saveMetric, loadMissions, saveMission, updateMission, deleteMission,
+  loadCoachMessages, appendCoachMessage, clearCoachMessages,
 } from './services/db';
 
 const EMPTY_STATE: AppState = {
@@ -32,6 +36,11 @@ const App: React.FC = () => {
   const [dataLoading, setDataLoading] = useState(false);
   const loadedForUid = useRef<string | null>(null);
 
+  // Datos del coach IA (fuera de AppState: son series/colecciones propias del uid).
+  const [metrics, setMetrics] = useState<DailyMetric[]>([]);
+  const [missions, setMissions] = useState<Mission[]>([]);
+  const [coachMessages, setCoachMessages] = useState<CoachMessage[]>([]);
+
   // Sesión de Firebase → currentUser (con perfil de Firestore).
   useEffect(() => {
     const unsub = observeAuth((user) => {
@@ -40,6 +49,7 @@ const App: React.FC = () => {
       if (!user) {
         loadedForUid.current = null;
         setState(prev => ({ ...prev, library: [], templates: [], cycles: [] }));
+        setMetrics([]); setMissions([]); setCoachMessages([]);
       }
     });
     return unsub;
@@ -53,8 +63,11 @@ const App: React.FC = () => {
     (async () => {
       setDataLoading(true);
       try {
-        let [library, templates, cycles] = await Promise.all([
+        let [library, templates, cycles, metricsData, missionsData, coachMsgs] = await Promise.all([
           loadWorkouts(uid), loadTemplates(uid), loadCycles(uid),
+          loadMetrics(uid).catch(() => [] as DailyMetric[]),
+          loadMissions(uid).catch(() => [] as Mission[]),
+          loadCoachMessages(uid).catch(() => [] as CoachMessage[]),
         ]);
         // Solo un admin siembra el contenido base GLOBAL (público) si falta.
         if (state.currentUser?.role === 'admin' && !library.some(w => w.isPublic)) {
@@ -62,6 +75,7 @@ const App: React.FC = () => {
           [library, templates] = await Promise.all([loadWorkouts(uid), loadTemplates(uid)]);
         }
         setState(prev => ({ ...prev, library, templates, cycles }));
+        setMetrics(metricsData); setMissions(missionsData); setCoachMessages(coachMsgs);
       } catch (e) {
         console.error('[Bellforce] error cargando datos:', e);
       } finally {
@@ -70,7 +84,7 @@ const App: React.FC = () => {
     })();
   }, [state.currentUser?.id]);
 
-  const [activeTab, setActiveTab] = useState<'home' | 'history' | 'stats' | 'library' | 'settings'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'history' | 'stats' | 'library' | 'settings' | 'coach'>('home');
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [selectedLog, setSelectedLog] = useState<WorkoutLog | null>(null);
   const [selectedLogCycleId, setSelectedLogCycleId] = useState<string | null>(null);
@@ -137,11 +151,90 @@ const App: React.FC = () => {
     setIsManagingCircuit(false);
   }, []);
 
-  const handleUpdateProfile = useCallback(async (data: { name?: string; photoURL?: string }) => {
+  const handleUpdateProfile = useCallback(async (data: { name?: string; photoURL?: string; coachKnowledge?: CoachKnowledge; coachNotes?: string }) => {
     const user = state.currentUser;
     if (!user) return;
     await updateUserProfile(user.id, data);
     setState(prev => prev.currentUser ? { ...prev, currentUser: { ...prev.currentUser, ...data } } : prev);
+  }, [state.currentUser]);
+
+  // ---- Coach IA: métricas, misiones y conversación ----
+  const handleSaveMetric = useCallback(async (m: DailyMetric) => {
+    const uid = state.currentUser?.id;
+    if (!uid) return;
+    await saveMetric(uid, m);
+    setMetrics(prev => {
+      const rest = prev.filter(x => x.date !== m.date);
+      const existing = prev.find(x => x.date === m.date);
+      return [...rest, { ...existing, ...m }].sort((a, b) => a.date.localeCompare(b.date));
+    });
+  }, [state.currentUser]);
+
+  const handleSaveMission = useCallback(async (m: Mission) => {
+    const uid = state.currentUser?.id;
+    if (!uid) return;
+    const saved = await saveMission({ ...m, userId: uid });
+    setMissions(prev => {
+      const rest = prev.filter(x => x.id !== saved.id);
+      return [...rest, saved];
+    });
+  }, [state.currentUser]);
+
+  const handleUpdateMission = useCallback(async (id: string, partial: Partial<Mission>) => {
+    await updateMission(id, partial);
+    setMissions(prev => prev.map(x => x.id === id ? { ...x, ...partial } : x));
+  }, []);
+
+  const handleDeleteMission = useCallback(async (id: string) => {
+    await deleteMission(id);
+    setMissions(prev => prev.filter(x => x.id !== id));
+  }, []);
+
+  const handleSendCoachMessage = useCallback(async (text: string, imageRefs?: string[]) => {
+    const user = state.currentUser;
+    if (!user) return;
+    const uid = user.id;
+    const history = coachMessages;
+    const now = new Date().toISOString();
+    const userMsgData = { role: 'user' as const, text, createdAt: now, ...(imageRefs && imageRefs.length ? { imageRefs } : {}) };
+
+    // Optimista: se muestra de inmediato. La persistencia es best-effort (no bloquea
+    // la respuesta ni depende de que las reglas de Firestore estén desplegadas).
+    setCoachMessages(prev => [...prev, { id: `tmp-${Date.now()}`, ...userMsgData }]);
+    appendCoachMessage(uid, userMsgData).catch(e => console.warn('[coach] no persistió mensaje del usuario:', e));
+
+    try {
+      const context = buildCoachContext({ workouts: state.library, cycles: userCycles, metrics, missions });
+      const answer = await sendCoachMessage(history, text, {
+        knowledge: user.coachKnowledge,
+        notes: user.coachNotes,
+        context,
+        imageRefs,
+      });
+      const asstData = { role: 'assistant' as const, text: answer, createdAt: new Date().toISOString() };
+      setCoachMessages(prev => [...prev, { id: `tmp-a-${Date.now()}`, ...asstData }]);
+      appendCoachMessage(uid, asstData).catch(e => console.warn('[coach] no persistió respuesta:', e));
+    } catch (e) {
+      console.error('[coach] error:', e);
+      setCoachMessages(prev => [...prev, { id: `err-${Date.now()}`, role: 'assistant', text: 'No pude responder en este momento. Revisa tu conexión e inténtalo de nuevo.', createdAt: new Date().toISOString() }]);
+    }
+  }, [state.currentUser, state.library, userCycles, metrics, missions, coachMessages]);
+
+  const handleClearCoachChat = useCallback(async () => {
+    const uid = state.currentUser?.id;
+    if (!uid) return;
+    await clearCoachMessages(uid);
+    setCoachMessages([]);
+  }, [state.currentUser]);
+
+  // Agrega una sugerencia del coach a las notas acumuladas (capa 3).
+  const handleAppendCoachNote = useCallback(async (text: string) => {
+    const user = state.currentUser;
+    if (!user) return;
+    const stamp = new Date().toLocaleDateString('es-MX');
+    const merged = `${(user.coachNotes || '').trim()}\n\n[${stamp}] ${text.trim()}`.trim();
+    await updateUserProfile(user.id, { coachNotes: merged });
+    setState(prev => prev.currentUser ? { ...prev, currentUser: { ...prev.currentUser, coachNotes: merged } } : prev);
   }, [state.currentUser]);
 
   const handleExportData = useCallback(() => {
@@ -662,14 +755,31 @@ const App: React.FC = () => {
             }}
           />
         );
+      case 'coach':
+        return (
+          <CoachView
+            messages={coachMessages}
+            missions={missions.filter(m => m.userId === state.currentUser!.id)}
+            metrics={metrics}
+            onSend={handleSendCoachMessage}
+            onClearChat={handleClearCoachChat}
+            onSaveMetric={handleSaveMetric}
+            onSaveMission={handleSaveMission}
+            onUpdateMission={handleUpdateMission}
+            onDeleteMission={handleDeleteMission}
+            onAppendCoachNote={handleAppendCoachNote}
+          />
+        );
       case 'settings':
         return (
           <SettingsView
             user={state.currentUser}
+            metrics={metrics}
             onLogout={handleLogout}
             onExport={handleExportData}
             onImport={handleImportData}
             onUpdateProfile={handleUpdateProfile}
+            onSaveMetric={handleSaveMetric}
           />
         );
       default:

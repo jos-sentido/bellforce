@@ -44,6 +44,7 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
   onUpdateLog
 }) => {
   const [comments, setComments] = useState('');
+  const [rpe, setRpe] = useState<number | undefined>(undefined);
   const [progressiveOverload, setProgressiveOverload] = useState('');
   const [weight, setWeight] = useState(workout.weight);
   const [description, setDescription] = useState(workout.description);
@@ -67,12 +68,14 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
     if (lastPropsLogId.current !== logId) {
       if (currentLog) {
         setComments(currentLog.comments || '');
+        setRpe(currentLog.rpe);
         setProgressiveOverload(currentLog.progressiveOverload || '');
         setImages(currentLog.statsImages || []);
         setAiAnalysis(currentLog.aiAnalysisText || '');
         setLogDate(isoToDateInput(currentLog.date));
       } else {
         setComments('');
+        setRpe(undefined);
         setProgressiveOverload('');
         setImages([]);
         setAiAnalysis('');
@@ -92,13 +95,14 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
     const imagesChanged = JSON.stringify(images) !== JSON.stringify(currentLog?.statsImages || []);
     return (
       comments !== (currentLog?.comments || '') ||
+      (rpe ?? null) !== (currentLog?.rpe ?? null) ||
       progressiveOverload !== (currentLog?.progressiveOverload || '') ||
       weight !== workout.weight ||
       description !== workout.description ||
       aiAnalysis !== (currentLog?.aiAnalysisText || '') ||
       imagesChanged
     );
-  }, [comments, progressiveOverload, weight, description, images, aiAnalysis, currentLog, workout]);
+  }, [comments, rpe, progressiveOverload, weight, description, images, aiAnalysis, currentLog, workout]);
 
   const handleSaveDraft = (e?: React.MouseEvent) => {
     if (e) {
@@ -112,6 +116,7 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
       statsImages: images,
       progressiveOverload,
       comments,
+      rpe,
       completed: false,
       aiAnalysisText: aiAnalysis
     }, weight, description, false);
@@ -122,6 +127,7 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
     e.stopPropagation();
     if (confirm("¿Descartar cambios no guardados?")) {
       setComments(currentLog?.comments || '');
+      setRpe(currentLog?.rpe);
       setProgressiveOverload(currentLog?.progressiveOverload || '');
       setImages(currentLog?.statsImages || []);
       setAiAnalysis(currentLog?.aiAnalysisText || '');
@@ -138,6 +144,7 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
       statsImages: images,
       progressiveOverload,
       comments,
+      rpe,
       completed: true,
       aiAnalysisText: aiAnalysis
     }, weight, description, true);
@@ -154,6 +161,7 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
       statsImages: images,
       progressiveOverload,
       comments,
+      rpe,
       completed: true,
       aiAnalysisText: aiAnalysis,
     };
@@ -164,6 +172,7 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
 
   const handleCancelEdits = () => {
     setComments(currentLog?.comments || '');
+    setRpe(currentLog?.rpe);
     setProgressiveOverload(currentLog?.progressiveOverload || '');
     setImages(currentLog?.statsImages || []);
     setAiAnalysis(currentLog?.aiAnalysisText || '');
@@ -320,6 +329,26 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
         <div>
           <label className="font-heading text-xs mb-2 block">Comentarios Hoy</label>
           <textarea disabled={readOnly} className="w-full neo-brutalism p-4 rounded-xl text-sm min-h-[80px] bg-white border-black" placeholder="¿Cómo te sentiste?" value={comments} onChange={(e) => setComments(e.target.value)} />
+        </div>
+
+        <div>
+          <label className="font-heading text-xs mb-2 block">Esfuerzo (RPE)</label>
+          <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Qué tan duro se sintió · 1 muy fácil → 10 máximo</p>
+          <div className="flex gap-1.5 flex-wrap">
+            {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
+              <button
+                key={n}
+                type="button"
+                disabled={readOnly}
+                onClick={() => setRpe(rpe === n ? undefined : n)}
+                className={`w-9 h-9 rounded-lg border-2 border-black font-heading text-sm transition-all disabled:opacity-50 ${
+                  rpe === n ? 'bg-black text-white shadow-[2px_2px_0px_#ebca7a]' : 'bg-white text-black'
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
         </div>
 
         {!currentLog?.completed ? (

@@ -45,6 +45,22 @@ service cloud.firestore {
       allow update: if isSignedIn() && request.auth.uid == uid
         && (request.resource.data.role == resource.data.role || isOwner());
       allow delete: if false;
+
+      // Métricas de salud (peso corporal + Garmin): privadas del dueño.
+      match /metrics/{dateId} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
+      }
+
+      // Conversación con el coach: privada del dueño.
+      match /coachMessages/{msgId} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
+      }
+    }
+
+    // ---- Misiones ----
+    match /missions/{id} {
+      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
     // ---- Workouts ----

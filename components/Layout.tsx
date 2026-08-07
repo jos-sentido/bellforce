@@ -5,8 +5,8 @@ import { ArchiveIcon } from './icons';
 
 interface LayoutProps {
   children: React.ReactNode;
-  activeTab: 'home' | 'history' | 'stats' | 'library' | 'settings';
-  setActiveTab: (tab: 'home' | 'history' | 'stats' | 'library' | 'settings') => void;
+  activeTab: 'home' | 'history' | 'stats' | 'library' | 'settings' | 'coach';
+  setActiveTab: (tab: 'home' | 'history' | 'stats' | 'library' | 'settings' | 'coach') => void;
   cycles: CircuitCycle[];
   library: Workout[]; 
   currentCycleIndex: number;
@@ -41,7 +41,7 @@ const Layout: React.FC<LayoutProps> = ({
     setIsMenuOpen(false);
   };
 
-  const handleNavClick = (tab: 'home' | 'history' | 'stats' | 'library' | 'settings') => {
+  const handleNavClick = (tab: 'home' | 'history' | 'stats' | 'library' | 'settings' | 'coach') => {
     setActiveTab(tab);
     setIsNavOpen(false);
   };
@@ -78,6 +78,11 @@ const Layout: React.FC<LayoutProps> = ({
     { id: 'history', label: 'Historial', icon: (
       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
         <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/>
+      </svg>
+    )},
+    { id: 'coach', label: 'Coach', icon: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 4c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm4 8H8v-.57c0-.81.48-1.53 1.22-1.85C10.07 11.21 11.01 11 12 11s1.93.21 2.78.58C15.52 11.9 16 12.62 16 13.43V14z"/>
       </svg>
     )},
     { id: 'stats', label: 'Stats', icon: (

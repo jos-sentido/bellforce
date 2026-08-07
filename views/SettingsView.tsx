@@ -1,24 +1,65 @@
 
 import React, { useRef, useState } from 'react';
-import { User } from '../types';
+import { User, DailyMetric, CoachKnowledge } from '../types';
 import { uploadImage, isCloudinaryConfigured } from '../services/cloudinary';
 import { CameraIcon } from '../components/icons';
+import { DEFAULT_COACH_KNOWLEDGE, DEFAULT_COACH_NOTES } from '../services/coachService';
 
 interface SettingsViewProps {
   user: User;
+  metrics: DailyMetric[];
   onLogout: () => void;
   onExport: () => void;
   onImport: (jsonText: string) => boolean;
-  onUpdateProfile: (data: { name?: string; photoURL?: string }) => Promise<void> | void;
+  onUpdateProfile: (data: { name?: string; photoURL?: string; coachKnowledge?: CoachKnowledge; coachNotes?: string }) => Promise<void> | void;
+  onSaveMetric: (m: DailyMetric) => Promise<void> | void;
 }
 
-const SettingsView: React.FC<SettingsViewProps> = ({ user, onLogout, onExport, onImport, onUpdateProfile }) => {
+const todayId = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const SettingsView: React.FC<SettingsViewProps> = ({ user, metrics, onLogout, onExport, onImport, onUpdateProfile, onSaveMetric }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<'idle' | 'ok' | 'error'>('idle');
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(user.name);
   const [photoUploading, setPhotoUploading] = useState(false);
+
+  // Configuración del coach (conocimiento editable + notas).
+  const initialKnowledge = user.coachKnowledge || DEFAULT_COACH_KNOWLEDGE;
+  const [knowledge, setKnowledge] = useState<CoachKnowledge>(initialKnowledge);
+  const [notes, setNotes] = useState(user.coachNotes ?? DEFAULT_COACH_NOTES);
+  const [coachOpen, setCoachOpen] = useState(false);
+  const [coachSaved, setCoachSaved] = useState(false);
+
+  const saveCoach = async () => {
+    await onUpdateProfile({ coachKnowledge: knowledge, coachNotes: notes });
+    setCoachSaved(true);
+    setTimeout(() => setCoachSaved(false), 2500);
+  };
+
+  const restoreCoach = () => {
+    if (!confirm('¿Restaurar el conocimiento y las notas del coach a los valores base?')) return;
+    setKnowledge(DEFAULT_COACH_KNOWLEDGE);
+    setNotes(DEFAULT_COACH_NOTES);
+  };
+
+  // Peso corporal de hoy.
+  const latestWeight = [...metrics].reverse().find(m => typeof m.bodyWeightKg === 'number');
+  const [weightInput, setWeightInput] = useState('');
+  const [weightSaved, setWeightSaved] = useState(false);
+
+  const saveWeight = async () => {
+    const val = parseFloat(weightInput.replace(',', '.'));
+    if (isNaN(val) || val <= 0) return;
+    await onSaveMetric({ date: todayId(), bodyWeightKg: val });
+    setWeightInput('');
+    setWeightSaved(true);
+    setTimeout(() => setWeightSaved(false), 2500);
+  };
 
   const saveName = async () => {
     const trimmed = nameValue.trim();
@@ -118,6 +159,76 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onLogout, onExport, o
             </span>
           </div>
         </div>
+      </section>
+
+      {/* PESO CORPORAL */}
+      <section className="neo-brutalism bg-white p-5 rounded-2xl border-black space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="font-heading text-sm uppercase">Peso corporal</h3>
+          {latestWeight && (
+            <span className="text-[11px] font-bold text-gray-500">
+              Último: {latestWeight.bodyWeightKg} kg · {latestWeight.date}
+            </span>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            placeholder="Peso de hoy (kg)"
+            value={weightInput}
+            onChange={e => setWeightInput(e.target.value)}
+            className="flex-1 min-w-0 p-3 border-2 border-black rounded-xl text-sm font-bold focus:outline-none"
+          />
+          <button onClick={saveWeight} className="bg-black text-white font-heading text-xs uppercase px-4 rounded-xl shrink-0 active:translate-y-0.5">Guardar</button>
+        </div>
+        {weightSaved && <p className="text-[12px] font-black uppercase text-[#77b074] animate-in fade-in">✓ Peso guardado</p>}
+      </section>
+
+      {/* CONFIGURACIÓN DEL COACH */}
+      <section className="neo-brutalism bg-white p-5 rounded-2xl border-black space-y-3">
+        <button onClick={() => setCoachOpen(o => !o)} className="w-full flex items-center justify-between">
+          <div className="text-left">
+            <h3 className="font-heading text-sm uppercase">Configuración del Coach</h3>
+            <p className="text-[11px] font-bold text-gray-500 mt-1">Conocimiento que usa tu coach IA</p>
+          </div>
+          <svg className={`w-5 h-5 transition-transform ${coachOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></svg>
+        </button>
+
+        {coachOpen && (
+          <div className="space-y-4 pt-2 animate-in fade-in">
+            {([
+              ['profile', 'Perfil del atleta'],
+              ['equipment', 'Equipo disponible'],
+              ['philosophy', 'Filosofía de programación'],
+              ['principles', 'Principios del atleta'],
+            ] as [keyof CoachKnowledge, string][]).map(([key, label]) => (
+              <div key={key}>
+                <label className="font-heading text-[12px] mb-1 block opacity-60 uppercase">{label}</label>
+                <textarea
+                  value={knowledge[key]}
+                  onChange={e => setKnowledge(k => ({ ...k, [key]: e.target.value }))}
+                  className="w-full bg-[#fdf6e3] neo-brutalism p-3 rounded-xl text-[13px] border-2 border-black focus:outline-none min-h-[90px] leading-relaxed"
+                />
+              </div>
+            ))}
+            <div>
+              <label className="font-heading text-[12px] mb-1 block opacity-60 uppercase">Notas del coach (entendimiento acumulado)</label>
+              <textarea
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                className="w-full bg-[#fdf6e3] neo-brutalism p-3 rounded-xl text-[13px] border-2 border-black focus:outline-none min-h-[120px] leading-relaxed"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button onClick={saveCoach} className="flex-1 neo-brutalism bg-[#77b074] text-white p-3 rounded-xl font-heading text-xs uppercase border-black active:translate-y-0.5 active:shadow-none">Guardar</button>
+              <button onClick={restoreCoach} className="neo-brutalism bg-white p-3 rounded-xl font-heading text-xs uppercase border-black active:translate-y-0.5 active:shadow-none">Restaurar base</button>
+            </div>
+            {coachSaved && <p className="text-[12px] font-black uppercase text-[#77b074] text-center animate-in fade-in">✓ Configuración guardada</p>}
+          </div>
+        )}
       </section>
 
       {/* COPIA DE SEGURIDAD */}

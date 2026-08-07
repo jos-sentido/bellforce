@@ -4,6 +4,14 @@ export type UserRole = 'admin' | 'user';
 // Tipos de pesas que puede usar un workout. Un workout puede combinar varias (entrenamiento mixto).
 export type EquipmentType = 'kettlebell' | 'dumbbell' | 'barbell';
 
+// Conocimiento editable del coach (capa 2): los "documentos" tipo GPT.
+export interface CoachKnowledge {
+  profile: string;     // Perfil del atleta (objetivos, filosofía, restricciones)
+  equipment: string;   // Equipo disponible
+  philosophy: string;  // Filosofía de programación
+  principles: string;  // Principios del atleta / qué NO hacer
+}
+
 export interface User {
   id: string;
   name: string;
@@ -11,6 +19,8 @@ export interface User {
   role: UserRole;
   joinedDate?: string;
   photoURL?: string;
+  coachKnowledge?: CoachKnowledge; // capa 2 (editable en Ajustes)
+  coachNotes?: string;             // capa 3: entendimiento acumulado (evoluciona)
 }
 
 export interface WorkoutHistoryEntry {
@@ -50,8 +60,51 @@ export interface WorkoutLog {
   progressiveOverload: string;
   comments: string;
   completed: boolean;
+  rpe?: number; // esfuerzo percibido de la sesión (1-10)
   aiAnalysisText?: string;
   isArchived?: boolean; // registro archivado: oculto del historial por defecto
+}
+
+// Serie temporal de salud: un doc por día (docId = fecha YYYY-MM-DD).
+// bodyWeightKg es captura manual; el resto lo lee el coach de una foto de Garmin.
+export interface DailyMetric {
+  date: string; // YYYY-MM-DD
+  bodyWeightKg?: number;
+  hrv?: number;
+  sleepHours?: number;
+  trainingReadiness?: number;
+  trainingLoad?: number;
+  vo2max?: number;
+  restingHR?: number;
+  bodyBattery?: number;
+  stress?: number;
+  sourceImage?: string; // URL Cloudinary de la captura Garmin de origen
+}
+
+export type MissionCapacity = 'fuerza' | 'potencia' | 'recovery' | 'otro';
+export type MissionStatus = 'active' | 'achieved' | 'abandoned';
+
+// Misión con condición de victoria (bloques de 6-8 semanas).
+export interface Mission {
+  id: string;
+  userId: string;
+  title: string;
+  capacity: MissionCapacity;
+  victoryCondition: string;
+  status: MissionStatus;
+  startDate: string;
+  achievedDate?: string;
+  blockWeeks?: number;
+  notes?: string;
+}
+
+// Mensaje de la conversación con el coach (memoria persistente).
+export interface CoachMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+  createdAt: string; // ISO
+  imageRefs?: string[]; // URLs de imágenes adjuntas (p. ej. Garmin)
 }
 
 export interface CircuitTemplate {
