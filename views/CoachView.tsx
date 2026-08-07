@@ -25,6 +25,15 @@ const CAPACITY_LABELS: Record<MissionCapacity, string> = {
   fuerza: 'Fuerza', potencia: 'Potencia', recovery: 'Recovery', otro: 'Otro',
 };
 
+// Quita restos de Markdown por si el modelo insiste (negritas, viñetas, headings, code).
+const stripMarkdown = (t: string) => t
+  .replace(/\*\*(.*?)\*\*/g, '$1')
+  .replace(/__(.*?)__/g, '$1')
+  .replace(/\*(.*?)\*/g, '$1')
+  .replace(/`([^`]+)`/g, '$1')
+  .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+  .replace(/^\s*[-*]\s+/gm, '• ');
+
 const readFile = (file: File) => new Promise<string>((res, rej) => {
   const r = new FileReader();
   r.onloadend = () => res(r.result as string);
@@ -145,7 +154,7 @@ const CoachView: React.FC<CoachViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)] text-black animate-in fade-in duration-300">
+    <div className="flex flex-col h-[calc(100dvh-104px)] text-black animate-in fade-in duration-300">
       <header className="mb-3 flex items-end justify-between">
         <div>
           <h2 className="font-heading text-3xl uppercase leading-none">Coach</h2>
@@ -204,7 +213,7 @@ const CoachView: React.FC<CoachViewProps> = ({
       </div>
 
       {/* CONVERSACIÓN */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 pb-2 scrollbar-none">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto space-y-3 pb-2 scrollbar-none">
         {messages.length === 0 && !sending && (
           <div className="text-center py-8 px-4 neo-brutalism bg-white rounded-2xl border-dashed border-black/30">
             <p className="font-heading text-sm uppercase mb-2">Habla con tu coach</p>
@@ -213,6 +222,9 @@ const CoachView: React.FC<CoachViewProps> = ({
         )}
         {messages.map(m => {
           const suggestion = m.role === 'assistant' ? noteSuggestion(m.text) : null;
+          const body = m.role === 'assistant'
+            ? stripMarkdown(suggestion ? m.text.split('SUGERENCIA DE NOTA:')[0].trim() : m.text)
+            : m.text;
           return (
             <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] p-3 rounded-2xl border-2 border-black text-[13px] leading-relaxed whitespace-pre-wrap ${m.role === 'user' ? 'bg-black text-white' : 'bg-white text-black'}`}>
@@ -221,7 +233,7 @@ const CoachView: React.FC<CoachViewProps> = ({
                     {m.imageRefs.map((img, i) => <img key={i} src={img} className="w-16 h-16 object-cover rounded-lg border-2 border-white/40" />)}
                   </div>
                 )}
-                {m.text}
+                {body}
                 {suggestion && (
                   <button onClick={() => onAppendCoachNote(suggestion)} className="mt-2 block w-full bg-[#ebca7a] text-black text-[10px] font-black uppercase py-1.5 rounded-lg border-2 border-black">+ Agregar a notas del coach</button>
                 )}
@@ -269,7 +281,7 @@ const CoachView: React.FC<CoachViewProps> = ({
       )}
 
       {/* COMPOSER */}
-      <div className="shrink-0 pt-2">
+      <div className="shrink-0 pt-2 pb-1 bg-[#fdf6e3]">
         {pendingImages.length > 0 && (
           <div className="flex gap-2 mb-2 overflow-x-auto">
             {pendingImages.map((img, i) => (
@@ -280,26 +292,36 @@ const CoachView: React.FC<CoachViewProps> = ({
             ))}
           </div>
         )}
-        <div className="flex gap-2 items-end">
-          {/* Adjuntar imagen al mensaje */}
-          <label className="w-11 h-11 shrink-0 neo-brutalism bg-white rounded-xl border-black flex items-center justify-center cursor-pointer active:translate-y-0.5">
-            {uploading ? <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" /> : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>}
+
+        {/* Fila de herramientas: adjuntar + Garmin */}
+        <div className="flex gap-2 mb-2">
+          <label className="flex-1 h-10 neo-brutalism bg-white rounded-xl border-black flex items-center justify-center gap-1.5 cursor-pointer active:translate-y-0.5">
+            {uploading
+              ? <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+              : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>}
+            <span className="text-[11px] font-black uppercase">Foto</span>
             <input type="file" accept="image/*" multiple className="hidden" onChange={e => { if (e.target.files?.length) attach(e.target.files); e.target.value = ''; }} />
           </label>
-          {/* Subir Garmin (extracción estructurada) */}
-          <label className="h-11 shrink-0 neo-brutalism bg-[#ebca7a] rounded-xl border-black flex items-center justify-center cursor-pointer active:translate-y-0.5 px-3">
-            {garminBusy ? <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" /> : <span className="text-[10px] font-black uppercase">Garmin</span>}
+          <label className="flex-1 h-10 neo-brutalism bg-[#ebca7a] rounded-xl border-black flex items-center justify-center gap-1.5 cursor-pointer active:translate-y-0.5">
+            {garminBusy
+              ? <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+              : <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 5v5.4l3.5 2.1-.9 1.5L11 13V7h2z"/></svg>}
+            <span className="text-[11px] font-black uppercase">Subir Garmin</span>
             <input type="file" accept="image/*" multiple className="hidden" disabled={garminBusy} onChange={e => { if (e.target.files?.length) uploadGarmin(e.target.files); e.target.value = ''; }} />
           </label>
+        </div>
+
+        {/* Fila de entrada: textarea grande + enviar */}
+        <div className="flex gap-2 items-end">
           <textarea
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
             placeholder="Escribe a tu coach…"
-            rows={1}
-            className="flex-1 neo-brutalism bg-white rounded-xl border-black p-3 text-sm focus:outline-none resize-none max-h-24"
+            rows={2}
+            className="flex-1 neo-brutalism bg-white rounded-xl border-black px-3 py-2.5 text-[15px] focus:outline-none resize-none min-h-[52px] max-h-32"
           />
-          <button onClick={send} disabled={sending || (!input.trim() && pendingImages.length === 0)} className="w-11 h-11 shrink-0 neo-brutalism bg-black text-white rounded-xl border-black flex items-center justify-center disabled:opacity-40 active:translate-y-0.5">
+          <button onClick={send} disabled={sending || (!input.trim() && pendingImages.length === 0)} className="w-12 h-[52px] shrink-0 neo-brutalism bg-black text-white rounded-xl border-black flex items-center justify-center disabled:opacity-40 active:translate-y-0.5">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" /></svg>
           </button>
         </div>
