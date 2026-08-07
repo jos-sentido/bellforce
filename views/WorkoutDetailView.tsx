@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Workout, WorkoutLog } from '../types';
-import { analyzeWorkoutPerformance, suggestProgressiveOverload } from '../services/geminiService';
+import { analyzeWorkoutPerformance, suggestProgressiveOverload } from '../services/claudeService';
 import { uploadImage, isCloudinaryConfigured } from '../services/cloudinary';
 import { EQUIPMENT_LABELS } from '../constants';
 import { BoltIcon } from '../components/icons';

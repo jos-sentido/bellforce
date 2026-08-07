@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { CircuitCycle, Workout, WorkoutLog } from '../types';
-import { analyzeGlobalPerformance, analyzeComparativePerformance } from '../services/geminiService';
+import { analyzeGlobalPerformance, analyzeComparativePerformance } from '../services/claudeService';
 import BarChart from '../components/BarChart';
 
 interface StatsViewProps {
@@ -322,7 +322,7 @@ const StatsView: React.FC<StatsViewProps> = ({ cycles = [], workouts = [] }) => 
         <div className="bg-blue-50 neo-brutalism p-6 rounded-2xl animate-in slide-in-from-bottom-4 duration-500 border-blue-200 relative">
           <div className="flex items-center gap-2 mb-4 border-b border-blue-200 pb-2">
             <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1a1 1 0 112 0v1a1 1 0 11-2 0zM13.536 14.243a1 1 0 011.414 1.414l-.707.707a1 1 0 01-1.414-1.414l.707-.707zM10 11a1 1 0 100-2 1 1 0 000 2z"/></svg>
-            <span className="font-heading text-xs text-blue-900 tracking-tight">Reporte Consolidado Gemini</span>
+            <span className="font-heading text-xs text-blue-900 tracking-tight">Reporte Consolidado Claude</span>
           </div>
           <div className="whitespace-pre-wrap text-[11px] leading-relaxed text-blue-900 font-medium">
             {analysis}
