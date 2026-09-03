@@ -20,6 +20,17 @@ const todayId = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
+type CoachField = keyof CoachKnowledge | 'notes';
+const FIELD_LABELS: Record<CoachField, string> = {
+  profile: 'Perfil del atleta',
+  equipment: 'Equipo disponible',
+  philosophy: 'Filosofía de programación',
+  principles: 'Principios del atleta',
+  notes: 'Notas del coach',
+};
+const FIELD_ORDER: CoachField[] = ['profile', 'equipment', 'philosophy', 'principles', 'notes'];
+const clamp2: React.CSSProperties = { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' };
+
 const SettingsView: React.FC<SettingsViewProps> = ({ user, metrics, onLogout, onExport, onImport, onUpdateProfile, onSaveMetric }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -29,22 +40,38 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, metrics, onLogout, on
   const [photoUploading, setPhotoUploading] = useState(false);
 
   // Configuración del coach (conocimiento editable + notas).
-  const initialKnowledge = user.coachKnowledge || DEFAULT_COACH_KNOWLEDGE;
-  const [knowledge, setKnowledge] = useState<CoachKnowledge>(initialKnowledge);
+  const [knowledge, setKnowledge] = useState<CoachKnowledge>(user.coachKnowledge || DEFAULT_COACH_KNOWLEDGE);
   const [notes, setNotes] = useState(user.coachNotes ?? DEFAULT_COACH_NOTES);
   const [coachOpen, setCoachOpen] = useState(false);
   const [coachSaved, setCoachSaved] = useState(false);
 
-  const saveCoach = async () => {
-    await onUpdateProfile({ coachKnowledge: knowledge, coachNotes: notes });
+  const [editingField, setEditingField] = useState<CoachField | null>(null);
+  const [draft, setDraft] = useState('');
+
+  const fieldValue = (f: CoachField) => (f === 'notes' ? notes : knowledge[f]);
+
+  const openEditor = (f: CoachField) => { setDraft(fieldValue(f)); setEditingField(f); };
+
+  const saveField = async () => {
+    if (!editingField) return;
+    if (editingField === 'notes') {
+      setNotes(draft);
+      await onUpdateProfile({ coachNotes: draft });
+    } else {
+      const nk = { ...knowledge, [editingField]: draft };
+      setKnowledge(nk);
+      await onUpdateProfile({ coachKnowledge: nk });
+    }
+    setEditingField(null);
     setCoachSaved(true);
     setTimeout(() => setCoachSaved(false), 2500);
   };
 
-  const restoreCoach = () => {
+  const restoreCoach = async () => {
     if (!confirm('¿Restaurar el conocimiento y las notas del coach a los valores base?')) return;
     setKnowledge(DEFAULT_COACH_KNOWLEDGE);
     setNotes(DEFAULT_COACH_NOTES);
+    await onUpdateProfile({ coachKnowledge: DEFAULT_COACH_KNOWLEDGE, coachNotes: DEFAULT_COACH_NOTES });
   };
 
   // Peso corporal de hoy.
@@ -197,36 +224,22 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, metrics, onLogout, on
         </button>
 
         {coachOpen && (
-          <div className="space-y-4 pt-2 animate-in fade-in">
-            {([
-              ['profile', 'Perfil del atleta'],
-              ['equipment', 'Equipo disponible'],
-              ['philosophy', 'Filosofía de programación'],
-              ['principles', 'Principios del atleta'],
-            ] as [keyof CoachKnowledge, string][]).map(([key, label]) => (
-              <div key={key}>
-                <label className="font-heading text-[12px] mb-1 block opacity-60 uppercase">{label}</label>
-                <textarea
-                  value={knowledge[key]}
-                  onChange={e => setKnowledge(k => ({ ...k, [key]: e.target.value }))}
-                  className="w-full bg-[#fdf6e3] neo-brutalism p-3 rounded-xl text-[13px] border-2 border-black focus:outline-none min-h-[90px] leading-relaxed"
-                />
-              </div>
+          <div className="space-y-2 pt-2 animate-in fade-in">
+            {FIELD_ORDER.map(f => (
+              <button
+                key={f}
+                onClick={() => openEditor(f)}
+                className="w-full text-left bg-[#fdf6e3] border-2 border-black rounded-xl p-3 active:translate-y-0.5"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-heading text-[13px] uppercase">{FIELD_LABELS[f]}</span>
+                  <span className="text-[10px] font-black uppercase text-gray-400 shrink-0 ml-2">Editar ›</span>
+                </div>
+                <p className="text-[12px] text-gray-500 leading-snug whitespace-pre-wrap" style={clamp2}>{fieldValue(f) || 'Vacío'}</p>
+              </button>
             ))}
-            <div>
-              <label className="font-heading text-[12px] mb-1 block opacity-60 uppercase">Notas del coach (entendimiento acumulado)</label>
-              <textarea
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                className="w-full bg-[#fdf6e3] neo-brutalism p-3 rounded-xl text-[13px] border-2 border-black focus:outline-none min-h-[120px] leading-relaxed"
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <button onClick={saveCoach} className="flex-1 neo-brutalism bg-[#77b074] text-white p-3 rounded-xl font-heading text-xs uppercase border-black active:translate-y-0.5 active:shadow-none">Guardar</button>
-              <button onClick={restoreCoach} className="neo-brutalism bg-white p-3 rounded-xl font-heading text-xs uppercase border-black active:translate-y-0.5 active:shadow-none">Restaurar base</button>
-            </div>
-            {coachSaved && <p className="text-[12px] font-black uppercase text-[#77b074] text-center animate-in fade-in">✓ Configuración guardada</p>}
+            <button onClick={restoreCoach} className="w-full neo-brutalism bg-white p-3 rounded-xl font-heading text-xs uppercase border-black active:translate-y-0.5 active:shadow-none">Restaurar valores base</button>
+            {coachSaved && <p className="text-[12px] font-black uppercase text-[#77b074] text-center animate-in fade-in">✓ Guardado</p>}
           </div>
         )}
       </section>
@@ -271,6 +284,24 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, metrics, onLogout, on
       </section>
 
       <p className="text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Bellforce · Entrenamiento con pesas</p>
+
+      {/* EDITOR A PANTALLA COMPLETA */}
+      {editingField && (
+        <div className="fixed inset-0 z-[4000] bg-[#fdf6e3] flex flex-col animate-in fade-in duration-150">
+          <div className="flex items-center justify-between gap-2 p-4 border-b-2 border-black bg-[#fdf6e3]">
+            <button onClick={() => setEditingField(null)} className="font-black text-xs uppercase text-gray-500 shrink-0">Cancelar</button>
+            <span className="font-heading text-sm uppercase truncate">{FIELD_LABELS[editingField]}</span>
+            <button onClick={saveField} className="bg-black text-white font-black text-xs uppercase px-4 py-2 rounded-lg shrink-0 active:translate-y-0.5">Guardar</button>
+          </div>
+          <textarea
+            autoFocus
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            placeholder="Escribe aquí…"
+            className="flex-1 w-full p-4 text-[15px] leading-relaxed bg-[#fdf6e3] text-black focus:outline-none resize-none"
+          />
+        </div>
+      )}
     </div>
   );
 };
