@@ -46,7 +46,9 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
   const [comments, setComments] = useState('');
   const [rpe, setRpe] = useState<number | undefined>(undefined);
   const [progressiveOverload, setProgressiveOverload] = useState('');
-  const [weight, setWeight] = useState(workout.weight);
+  // Peso REAL usado en la sesión. Sugerencia inicial: el peso del log (si se edita)
+  // o el peso del slot/workout (referencia). NO muta el workout al guardar.
+  const [weight, setWeight] = useState(currentLog?.weight ?? workout.weight);
   const [description, setDescription] = useState(workout.description);
   const [images, setImages] = useState<string[]>([]);
   const [logDate, setLogDate] = useState('');
@@ -63,7 +65,7 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
   const readOnly = !!currentLog?.completed && !editingCompleted;
 
   useEffect(() => {
-    const logId = currentLog ? `${currentLog.date}-${currentLog.workoutId}` : 'new';
+    const logId = currentLog ? `${currentLog.date}-${currentLog.slotId || currentLog.workoutId}` : 'new';
 
     if (lastPropsLogId.current !== logId) {
       if (currentLog) {
@@ -83,8 +85,8 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
       }
       setEditingCompleted(false);
 
-      // Sincronizar con el workout actual de la librería
-      setWeight(workout.weight);
+      // Peso: el registrado en la sesión (si existe) o la sugerencia del slot/workout.
+      setWeight(currentLog?.weight ?? workout.weight);
       setDescription(workout.description);
 
       lastPropsLogId.current = logId;
@@ -97,7 +99,7 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
       comments !== (currentLog?.comments || '') ||
       (rpe ?? null) !== (currentLog?.rpe ?? null) ||
       progressiveOverload !== (currentLog?.progressiveOverload || '') ||
-      weight !== workout.weight ||
+      weight !== (currentLog?.weight ?? workout.weight) ||
       description !== workout.description ||
       aiAnalysis !== (currentLog?.aiAnalysisText || '') ||
       imagesChanged
@@ -111,15 +113,18 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
     }
     onSave({
       workoutId: workout.id,
+      slotId: (workout as any).slotId,
       date: currentLog?.date || new Date().toISOString(),
       time: currentLog?.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      weight,
+      weightCount: workout.weightCount,
       statsImages: images,
       progressiveOverload,
       comments,
       rpe,
       completed: false,
       aiAnalysisText: aiAnalysis
-    }, weight, description, false);
+    }, undefined, description, false);
   };
 
   const handleDiscardChanges = (e: React.MouseEvent) => {
@@ -139,15 +144,18 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
   const handleComplete = () => {
     onSave({
       workoutId: workout.id,
+      slotId: (workout as any).slotId,
       date: currentLog?.date || new Date().toISOString(),
       time: currentLog?.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      weight,
+      weightCount: workout.weightCount,
       statsImages: images,
       progressiveOverload,
       comments,
       rpe,
       completed: true,
       aiAnalysisText: aiAnalysis
-    }, weight, description, true);
+    }, undefined, description, true);
   };
 
   // Guardar la edición de un registro ya entrenado (histórico).
@@ -158,6 +166,8 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
       ...currentLog,
       workoutId: workout.id,
       date: newDate,
+      weight,
+      weightCount: workout.weightCount,
       statsImages: images,
       progressiveOverload,
       comments,
@@ -165,8 +175,8 @@ const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
       completed: true,
       aiAnalysisText: aiAnalysis,
     };
-    if (onUpdateLog) onUpdateLog(updated, weight, description);
-    else onSave(updated, weight, description, true);
+    if (onUpdateLog) onUpdateLog(updated, undefined, description);
+    else onSave(updated, undefined, description, true);
     setEditingCompleted(false);
   };
 

@@ -3,7 +3,30 @@ import {
   query, where, orderBy, limit as fbLimit, serverTimestamp, writeBatch,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Workout, CircuitTemplate, CircuitCycle, WorkoutLog, DailyMetric, Mission, CoachMessage } from '../types';
+import { Workout, CircuitTemplate, CircuitCycle, CircuitSlot, WorkoutLog, DailyMetric, Mission, CoachMessage } from '../types';
+
+// ---------- SLOTS (aparición de un workout en un circuito) ----------
+// Normaliza un ciclo a su lista de slots. Si ya tiene `slots`, se usan. Si no
+// (ciclo legacy), se derivan de workoutIds: la 1ra aparición de un workoutId usa
+// slotId = workoutId (compat con logs/pesos viejos), las extras usan sufijo.
+export function cycleSlots(cycle: Partial<CircuitCycle>): CircuitSlot[] {
+  if (Array.isArray(cycle.slots) && cycle.slots.length) return cycle.slots;
+  const ids = cycle.workoutIds || [];
+  const seen = new Map<string, number>();
+  return ids.map(wid => {
+    const n = (seen.get(wid) || 0) + 1;
+    seen.set(wid, n);
+    const id = n === 1 ? wid : `${wid}__s${n}`;
+    const weight = cycle.workoutWeights?.[wid];
+    return weight ? { id, workoutId: wid, weight } : { id, workoutId: wid };
+  });
+}
+
+// slotId efectivo de un log (compat: logs viejos sin slotId caen al workoutId,
+// que coincide con el slotId de la 1ra aparición).
+export function logSlotId(log: Pick<WorkoutLog, 'slotId' | 'workoutId'>): string {
+  return log.slotId || log.workoutId;
+}
 
 // ============================================================================
 // Capa de datos Firestore. Colecciones:
@@ -80,21 +103,30 @@ export async function loadCycles(uid: string): Promise<CircuitCycle[]> {
   return cycles;
 }
 
+// Si el objeto trae `slots`, deriva `workoutIds` (legacy) para compat de lectura.
+function withDerivedWorkoutIds<T extends { slots?: CircuitSlot[] }>(data: T): T {
+  if (Array.isArray(data.slots)) {
+    (data as any).workoutIds = data.slots.map(s => s.workoutId);
+  }
+  return data;
+}
+
 export async function createCycle(c: Omit<CircuitCycle, 'id'>): Promise<string> {
   const { logs, ...data } = c as any;
-  const ref = await addDoc(collection(db, 'cycles'), clean({ ...data, createdAt: serverTimestamp() }));
+  const ref = await addDoc(collection(db, 'cycles'), clean(withDerivedWorkoutIds({ ...data, createdAt: serverTimestamp() })));
   return ref.id;
 }
 
 export async function updateCycle(id: string, partial: Partial<CircuitCycle>): Promise<void> {
   const { logs, id: _ignore, ...data } = partial as any;
-  await updateDoc(doc(db, 'cycles', id), clean(data));
+  await updateDoc(doc(db, 'cycles', id), clean(withDerivedWorkoutIds(data)));
 }
 
-// Id de log determinista: en circuito 1 log por workout; en libre 1 por workout+fecha.
+// Id de log determinista: en circuito 1 log por SLOT (aparición); en libre 1 por
+// workout+fecha. Usar slotId permite repetir un workout en el circuito.
 function logDocId(log: WorkoutLog, isStandalone: boolean): string {
   const stamp = log.date.replace(/[^0-9A-Za-z]/g, '');
-  return isStandalone ? `${log.workoutId}__${stamp}` : log.workoutId;
+  return isStandalone ? `${log.workoutId}__${stamp}` : logSlotId(log);
 }
 
 export async function saveLog(cycleId: string, log: WorkoutLog, isStandalone: boolean): Promise<void> {

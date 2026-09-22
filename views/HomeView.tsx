@@ -25,13 +25,14 @@ const HomeView: React.FC<HomeViewProps> = ({
   onArchiveCycle
 }) => {
   const currentLogs = Array.isArray(currentCycle.logs) ? currentCycle.logs : [];
-  const completedCount = currentLogs.filter(l => l.completed).length;
+  // Identidad por aparición: cada slot (workout+slotId) tiene su propio log.
+  const sid = (x: { slotId?: string; id?: string; workoutId?: string }) => x.slotId || (x as any).workoutId || x.id;
+  const logBySlot = (w: Workout) => currentLogs.find(l => (l.slotId || l.workoutId) === sid(w));
+  const completedCount = workouts.filter(w => logBySlot(w)?.completed).length;
   const progressPercent = workouts.length > 0 ? (completedCount / workouts.length) * 100 : 0;
   const isCompleted = completedCount >= workouts.length || currentCycle.status === 'completed';
 
-  const nextWorkoutIndex = workouts.findIndex(w => 
-    !currentLogs.find(l => l.workoutId === w.id)?.completed
-  );
+  const nextWorkoutIndex = workouts.findIndex(w => !logBySlot(w)?.completed);
   const nextWorkout = nextWorkoutIndex !== -1 ? workouts[nextWorkoutIndex] : null;
 
   return (
@@ -106,11 +107,11 @@ const HomeView: React.FC<HomeViewProps> = ({
         </div>
         
         {workouts.map((workout, idx) => {
-          const log = currentLogs.find(l => l.workoutId === workout.id);
+          const log = logBySlot(workout);
           const isDone = log?.completed;
-          const isNext = nextWorkout?.id === workout.id;
+          const isNext = nextWorkoutIndex === idx;
           return (
-            <div key={`${workout.id}-${idx}`} onClick={() => onSelectWorkout(workout)} className={`neo-brutalism p-4 rounded-xl flex items-center gap-4 border-black transition-all cursor-pointer ${isDone ? 'bg-[#c1e1c1]' : isNext ? 'bg-white border-dashed' : 'bg-white'}`}>
+            <div key={`${sid(workout)}-${idx}`} onClick={() => onSelectWorkout(workout)} className={`neo-brutalism p-4 rounded-xl flex items-center gap-4 border-black transition-all cursor-pointer ${isDone ? 'bg-[#c1e1c1]' : isNext ? 'bg-white border-dashed' : 'bg-white'}`}>
               <div className={`w-8 h-8 rounded-full border-2 border-black flex items-center justify-center font-heading text-xs ${isDone ? 'bg-black text-white' : 'bg-white text-black'}`}>{idx + 1}</div>
               <div className="flex-1 text-black"><h5 className="font-heading text-sm leading-none mb-1">{workout.name}</h5><p className="text-[10px] text-gray-500 font-bold uppercase">{isDone ? `COMPLETADO` : workout.type}</p></div>
               {isDone && <svg className="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path></svg>}

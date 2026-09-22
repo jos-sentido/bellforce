@@ -180,7 +180,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
                   const hasPhotos = (item.log.statsImages && item.log.statsImages.length > 0) || (item.log.sessionMedia && item.log.sessionMedia.length > 0);
                   const hasAI = !!item.log.aiAnalysisText;
                   return (
-                    <div key={`${item.cycle.id}-${item.log.workoutId}-${idx}`} className="relative">
+                    <div key={`${item.cycle.id}-${item.log.slotId || item.log.workoutId}-${idx}`} className="relative">
                       <div className={`absolute -left-6 top-4 w-4 h-4 rounded-full border-2 border-black z-10 ${item.isStandalone ? 'bg-[#ebca7a]' : 'bg-black'}`} />
                       <div className="neo-brutalism bg-white rounded-xl border-black p-4 relative">
                         {onArchiveLog && (
@@ -201,6 +201,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
                             <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border tracking-wide ${item.isStandalone ? 'bg-[#ebca7a]/40 text-black border-black' : 'bg-black text-white border-black'}`}>
                               {item.isStandalone ? 'Entreno libre' : item.cycle.name}
                             </span>
+                            {item.log.weight && <span className="text-[9px] bg-[#ebca7a]/40 text-black px-2 py-0.5 rounded border border-black font-black uppercase">{item.log.weightCount && item.log.weightCount >= 2 ? `2 × ${item.log.weight}` : item.log.weight}</span>}
                             {hasPhotos && <span className="text-[9px] bg-gray-100 text-gray-700 px-2 py-0.5 rounded border border-gray-200 font-black uppercase inline-flex items-center gap-1"><CameraIcon className="w-3 h-3" /> Media</span>}
                             {hasAI && <span className="text-[9px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded border border-blue-200 font-black uppercase">IA</span>}
                           </div>

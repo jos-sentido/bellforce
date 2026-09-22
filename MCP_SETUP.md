@@ -24,6 +24,10 @@ Endpoint: `api/mcp/[key].ts` (Streamable HTTP). Auth fase 1 = **secreto en la UR
 Firebase Console → **Authentication** → pestaña **Users** → busca tu cuenta
 (`alvarezcruzjoseantonio@gmail.com`) → copia el **User UID**. Ese es `BELLFORCE_OWNER_UID`.
 
+> ⚠️ **Es el UID, NO el email.** El UID es un código tipo `sdT0kHUA1oWMzcDjdsCb3DXQuai1`
+> (columna *User UID*). Si pegas el email, el MCP no verá tus ciclos/historial (la app
+> identifica al dueño por UID) y lo que cree quedará con dueño equivocado.
+
 ## Paso 3 — Env vars en Vercel
 
 Proyecto `bellforce` → Settings → Environment Variables (Production). Agrega:

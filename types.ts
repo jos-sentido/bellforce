@@ -53,8 +53,11 @@ export interface Workout {
 
 export interface WorkoutLog {
   workoutId: string;
+  slotId?: string; // identidad de la APARICIÓN dentro del circuito (permite repetir un workout)
   date: string;
   time: string;
+  weight?: string;       // peso REAL usado esa sesión (autoritativo en historial)
+  weightCount?: number;  // número de pesas usado esa sesión (1 o 2)
   statsImages: string[];
   sessionMedia?: MediaItem[]; // videos/imágenes de la sesión registrada
   progressiveOverload: string;
@@ -115,6 +118,15 @@ export interface CircuitTemplate {
   isPublic: boolean;
 }
 
+// Una APARICIÓN de un workout dentro de un circuito. Un mismo workoutId puede
+// aparecer en varios slots (repetible, reordenable), cada uno con su propio
+// registro de sesión y su propio peso.
+export interface CircuitSlot {
+  id: string;        // id estable de la aparición (1ra aparición: = workoutId; extras: workoutId__s2, __s3, …)
+  workoutId: string; // referencia a la definición en la biblioteca (NO se duplica)
+  weight?: string;   // peso por aparición (override); si falta, usa el del workout
+}
+
 export type CycleStatus = 'active' | 'paused' | 'completed';
 
 export interface CircuitCycle {
@@ -126,8 +138,9 @@ export interface CircuitCycle {
   logs: WorkoutLog[];
   status: CycleStatus;
   isArchived?: boolean;
-  workoutIds?: string[];
-  workoutWeights?: Record<string, string>;
+  slots?: CircuitSlot[]; // fuente de verdad de composición/orden/peso por aparición
+  workoutIds?: string[]; // legacy (ciclos viejos / compat de lectura); derivado de slots al guardar
+  workoutWeights?: Record<string, string>; // legacy (peso por workoutId)
   type?: 'circuit' | 'standalone'; // Nueva propiedad
 }
 

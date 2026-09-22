@@ -148,12 +148,17 @@ export function buildCoachContext({ workouts, cycles, metrics, missions }: Coach
 
   const recentLogsText = logs.slice(0, 12).map(l => {
     const w = wById.get(l.workoutId);
+    // Peso REAL de la sesión (log). Fallback a la sugerencia del workout.
+    const weightText = l.weight
+      ? formatWeight(l.weight, l.weightCount ?? w?.weightCount)
+      : (w ? formatWeight(w.weight, w.weightCount) : '');
     const parts = [
       new Date(l.date).toLocaleDateString('es-MX'),
       w?.name || 'Workout',
-      w ? formatWeight(w.weight, w.weightCount) : '',
+      weightText,
       w?.type ? `[${w.type}]` : '',
       l.rpe ? `RPE ${l.rpe}` : '',
+      l.progressiveOverload ? `Δ ${l.progressiveOverload.slice(0, 80)}` : '',
       l.comments ? `— ${l.comments.slice(0, 120)}` : '',
     ].filter(Boolean);
     return `- ${parts.join(' · ')}`;

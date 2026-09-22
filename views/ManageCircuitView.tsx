@@ -22,16 +22,18 @@ interface ManageCircuitViewProps {
   onAdd: (workoutId: string, position?: number) => void;
   onRemove: (index: number) => void;
   onReorder: (index: number, direction: 'up' | 'down') => void;
+  onSetSlotWeight?: (index: number, weight: string) => void;
   onBack: () => void;
 }
 
-const ManageCircuitView: React.FC<ManageCircuitViewProps> = ({ 
-  activeWorkouts, 
+const ManageCircuitView: React.FC<ManageCircuitViewProps> = ({
+  activeWorkouts,
   library,
   onAdd,
-  onRemove, 
-  onReorder, 
-  onBack 
+  onRemove,
+  onReorder,
+  onSetSlotWeight,
+  onBack
 }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -122,6 +124,17 @@ const ManageCircuitView: React.FC<ManageCircuitViewProps> = ({
             <div className="flex-1 overflow-hidden">
                <h4 className="font-heading text-xs truncate text-black">{w.name}</h4>
                <p className="text-[10px] text-gray-600 font-bold uppercase">{w.type}<EquipmentBadges equipment={w.equipment} /></p>
+               {onSetSlotWeight && (
+                 <div className="flex items-center gap-1 mt-1">
+                   <span className="text-[9px] font-black uppercase text-gray-400">Peso sug.:</span>
+                   <input
+                     defaultValue={w.weight}
+                     onBlur={(e) => { if (e.target.value !== w.weight) onSetSlotWeight(idx, e.target.value); }}
+                     className="w-20 text-[10px] font-bold bg-[#ebca7a]/30 border border-black rounded px-1.5 py-0.5 focus:outline-none"
+                     placeholder="ej. 24 kg"
+                   />
+                 </div>
+               )}
             </div>
 
             <div className="flex items-center gap-1 shrink-0">

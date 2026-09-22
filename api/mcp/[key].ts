@@ -110,14 +110,56 @@ async function deleteWorkout(uid: string, id: string) {
   return { deleted: id };
 }
 
+// ---- SLOTS (aparición de un workout en un circuito) -----------------------
+// Gemelo de services/db.ts cycleSlots(): normaliza un ciclo a su lista de slots.
+// 1ra aparición de un workoutId => slotId = workoutId (compat con logs viejos);
+// extras => sufijo __s2, __s3, …
+function mcpCycleSlots(cycle: any): Array<{ id: string; workoutId: string; weight?: string }> {
+  if (Array.isArray(cycle.slots) && cycle.slots.length) return cycle.slots;
+  const ids: string[] = cycle.workoutIds || [];
+  const seen = new Map<string, number>();
+  return ids.map(wid => {
+    const n = (seen.get(wid) || 0) + 1;
+    seen.set(wid, n);
+    const id = n === 1 ? wid : `${wid}__s${n}`;
+    const weight = cycle.workoutWeights?.[wid];
+    return weight ? { id, workoutId: wid, weight } : { id, workoutId: wid };
+  });
+}
+
+// Construye slots (con ids estables) a partir de items {workoutId, weight?, id?}.
+function buildSlots(items: Array<{ workoutId: string; weight?: string; id?: string }>) {
+  const seen = new Map<string, number>();
+  return items.filter(it => it && it.workoutId).map(it => {
+    const wid = it.workoutId;
+    const n = (seen.get(wid) || 0) + 1;
+    seen.set(wid, n);
+    const id = it.id || (n === 1 ? wid : `${wid}__s${n}`);
+    return it.weight ? { id, workoutId: wid, weight: it.weight } : { id, workoutId: wid };
+  });
+}
+
+// Resuelve el slotId de un circuito a partir de data.slotId o data.workoutId.
+function resolveCircuitSlotId(cycle: any, data: any): string {
+  if (data.slotId) return data.slotId;
+  const slots = mcpCycleSlots(cycle);
+  const matches = slots.filter(s => s.workoutId === data.workoutId);
+  if (matches.length === 1) return matches[0].id;
+  if (matches.length > 1) {
+    throw new Error(`"${data.workoutId}" aparece ${matches.length} veces en el circuito; especifica slotId (usa list_cycles para ver los slots).`);
+  }
+  return data.workoutId; // no está en slots; usa workoutId como slotId
+}
+
 async function listCycles(uid: string, opts: any = {}) {
   const db = getDb();
   const snap = await db.collection('cycles').where('userId', '==', uid).get();
   let cycles = await Promise.all(snap.docs.map(async (d: any) => {
-    const base: any = { id: d.id, ...d.data() };
+    const raw = d.data();
+    const base: any = { id: d.id, ...raw, slots: mcpCycleSlots(raw) };
     if (opts.withLogs) {
       const logs = await db.collection('cycles').doc(d.id).collection('logs').get();
-      base.logs = logs.docs.map((l: any) => l.data());
+      base.logs = logs.docs.map((l: any) => ({ slotId: l.id, ...l.data() }));
     }
     return base;
   }));
@@ -142,6 +184,14 @@ async function createCycle(uid: string, data: any) {
     });
     if (toPause) await batch.commit();
   }
+  // Construye slots (aparición por aparición). Acepta `slots` [{workoutId, weight?}]
+  // (permite repetir + peso planeado por aparición) o `workoutIds` (repeticiones ok)
+  // con `workoutWeights` opcional (peso planeado por workoutId).
+  const items = Array.isArray(data.slots) && data.slots.length
+    ? data.slots.map((s: any) => ({ workoutId: s.workoutId, weight: s.weight, id: s.id }))
+    : (Array.isArray(data.workoutIds) ? data.workoutIds.map((wid: string) => ({ workoutId: wid, weight: data.workoutWeights?.[wid] })) : []);
+  const slots = buildSlots(items);
+
   const payload = clean({
     userId: uid,
     name: data.name ?? 'Circuito',
@@ -149,8 +199,8 @@ async function createCycle(uid: string, data: any) {
     endDate: data.endDate,
     status,
     type,
-    workoutIds: Array.isArray(data.workoutIds) ? data.workoutIds : undefined,
-    workoutWeights: data.workoutWeights,
+    slots: slots.length ? slots : undefined,
+    workoutIds: slots.length ? slots.map(s => s.workoutId) : undefined, // legacy/compat
     createdAt: FieldValue.serverTimestamp(),
   });
   const ref = await db.collection('cycles').add(payload);
@@ -159,8 +209,8 @@ async function createCycle(uid: string, data: any) {
   // TEMPLATES, no cycles), creamos una plantilla espejo salvo type standalone
   // o que se pida saltarla (saveAsTemplate:false).
   let templateId: string | undefined;
-  if (type !== 'standalone' && data.saveAsTemplate !== false && Array.isArray(data.workoutIds) && data.workoutIds.length) {
-    const t = await createTemplate(uid, { name: payload.name, workoutIds: data.workoutIds, isPublic: data.isPublic === true });
+  if (type !== 'standalone' && data.saveAsTemplate !== false && slots.length) {
+    const t = await createTemplate(uid, { name: payload.name, workoutIds: slots.map(s => s.workoutId), isPublic: data.isPublic === true });
     templateId = t.id;
   }
   return { id: ref.id, ...payload, createdAt: undefined, templateId };
@@ -189,14 +239,22 @@ async function updateCycle(uid: string, id: string, patch: any) {
   if (!snap.exists) throw new Error(`updateCycle: no existe ciclo ${id}`);
   if ((snap.data() as any).userId !== uid) throw new Error('updateCycle: no eres el dueño de este ciclo');
   const { id: _i, userId: _u, logs: _l, createdAt: _ca, ...rest } = patch;
+  // Si se edita la composición, normaliza a slots y deriva workoutIds (legacy).
+  if (Array.isArray(rest.slots)) {
+    rest.slots = buildSlots(rest.slots.map((s: any) => ({ workoutId: s.workoutId, weight: s.weight, id: s.id })));
+    rest.workoutIds = rest.slots.map((s: any) => s.workoutId);
+  } else if (Array.isArray(rest.workoutIds)) {
+    rest.slots = buildSlots(rest.workoutIds.map((wid: string) => ({ workoutId: wid })));
+  }
   await ref.update(clean(rest));
   return { id, ...(snap.data() as any), ...rest };
 }
 
-// Id de log determinista, igual que services/db.ts.
-function logDocId(workoutId: string, date: string, isStandalone: boolean): string {
+// Id de log determinista, gemelo de services/db.ts. En circuito = slotId (permite
+// repetir un workout); en libre = workoutId__fecha.
+function logDocId(workoutId: string, date: string, isStandalone: boolean, slotId?: string): string {
   const stamp = String(date).replace(/[^0-9A-Za-z]/g, '');
-  return isStandalone ? `${workoutId}__${stamp}` : workoutId;
+  return isStandalone ? `${workoutId}__${stamp}` : (slotId || workoutId);
 }
 
 async function logSession(uid: string, data: any) {
@@ -210,11 +268,15 @@ async function logSession(uid: string, data: any) {
   const cycle = cycleSnap.data() as any;
   if (cycle.userId !== uid) throw new Error('logSession: no eres el dueño de este ciclo');
   const isStandalone = cycle.type === 'standalone';
+  const slotId = isStandalone ? undefined : resolveCircuitSlotId(cycle, data);
   const now = new Date();
   const log = clean({
     workoutId: data.workoutId,
+    slotId, // identidad de la aparición (circuito)
     date: data.date ?? now.toISOString().slice(0, 10),
     time: data.time ?? now.toTimeString().slice(0, 5),
+    weight: data.weight, // peso REAL usado (autoritativo en historial)
+    weightCount: typeof data.weightCount === 'number' ? data.weightCount : undefined,
     statsImages: Array.isArray(data.statsImages)
       ? data.statsImages.filter((s: any) => typeof s === 'string' && s.startsWith('http'))
       : [],
@@ -224,8 +286,48 @@ async function logSession(uid: string, data: any) {
     rpe: typeof data.rpe === 'number' ? data.rpe : undefined,
     aiAnalysisText: data.aiAnalysisText,
   });
-  await cycleRef.collection('logs').doc(logDocId(log.workoutId, log.date, isStandalone)).set(log);
+  await cycleRef.collection('logs').doc(logDocId(log.workoutId, log.date, isStandalone, slotId)).set(log);
   return { cycleId, log };
+}
+
+// Actualiza (merge) un log de sesión existente, sin duplicar. Identifica el log
+// por slotId (circuito) o workoutId+date (standalone).
+async function updateLog(uid: string, data: any) {
+  const db = getDb();
+  const cycleId: string = data.cycleId;
+  if (!cycleId) throw new Error('updateLog: falta "cycleId"');
+  const cycleRef = db.collection('cycles').doc(cycleId);
+  const cycleSnap = await cycleRef.get();
+  if (!cycleSnap.exists) throw new Error(`updateLog: no existe ciclo ${cycleId}`);
+  const cycle = cycleSnap.data() as any;
+  if (cycle.userId !== uid) throw new Error('updateLog: no eres el dueño de este ciclo');
+  const isStandalone = cycle.type === 'standalone';
+
+  let docId: string;
+  if (isStandalone) {
+    if (!data.workoutId || !data.date) throw new Error('updateLog (standalone): requiere workoutId y date');
+    docId = logDocId(data.workoutId, data.date, true);
+  } else {
+    const slotId = resolveCircuitSlotId(cycle, data);
+    docId = logDocId(data.workoutId || slotId, data.date || '', false, slotId);
+  }
+  const ref = cycleRef.collection('logs').doc(docId);
+  const snap = await ref.get();
+  if (!snap.exists) throw new Error(`updateLog: no existe el log ${docId} en el ciclo (usa get_history/list_cycles para ubicarlo)`);
+
+  // Solo campos editables; merge para no perder lo demás.
+  const patch = clean({
+    weight: data.weight,
+    weightCount: typeof data.weightCount === 'number' ? data.weightCount : undefined,
+    progressiveOverload: data.progressiveOverload,
+    comments: data.comments,
+    rpe: typeof data.rpe === 'number' ? data.rpe : undefined,
+    completed: typeof data.completed === 'boolean' ? data.completed : undefined,
+    date: isStandalone ? undefined : data.date, // en standalone la fecha define el id; no se cambia aquí
+    aiAnalysisText: data.aiAnalysisText,
+  });
+  await ref.set(patch, { merge: true });
+  return { cycleId, logId: docId, patched: patch };
 }
 
 async function getHistory(uid: string, opts: any = {}) {
@@ -234,12 +336,20 @@ async function getHistory(uid: string, opts: any = {}) {
   const rows: any[] = [];
   await Promise.all(cyclesSnap.docs.map(async (c: any) => {
     const cyc = c.data() as any;
+    const isStandalone = (cyc.type ?? 'circuit') === 'standalone';
     const logs = await db.collection('cycles').doc(c.id).collection('logs').get();
     logs.docs.forEach((l: any) => {
       const log = l.data() as any;
       if (opts.onlyCompleted !== false && !log.completed) return;
       if (opts.sinceDate && String(log.date) < opts.sinceDate) return;
-      rows.push({ cycleId: c.id, cycleName: cyc.name, cycleType: cyc.type ?? 'circuit', ...log });
+      rows.push({
+        cycleId: c.id,
+        cycleName: cyc.name,
+        cycleType: cyc.type ?? 'circuit',
+        slotId: isStandalone ? undefined : (log.slotId || l.id), // identidad de aparición
+        logId: l.id,
+        ...log,
+      });
     });
   }));
   rows.sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.time).localeCompare(String(a.time)));
@@ -295,7 +405,7 @@ const TOOLS = [
       required: ['name'],
       properties: {
         name: { type: 'string' },
-        weight: { type: 'string', description: 'peso POR pesa, ej. "24 kg"' },
+        weight: { type: 'string', description: 'peso SUGERIDO/referencia por pesa, ej. "24 kg" (el peso real se registra al completar la sesión, no aquí)' },
         weightCount: { type: 'number', description: '1 (default) o 2 (doble pesa)' },
         type: { type: 'string', description: 'tipo de ejercicio, ej. "fuerza", "potencia"' },
         equipment: { type: 'array', items: { type: 'string', enum: ['kettlebell', 'dumbbell', 'barbell'] } },
@@ -347,7 +457,7 @@ const TOOLS = [
   },
   {
     name: 'create_cycle',
-    description: 'Crea un ciclo/circuito nuevo para el usuario, opcionalmente con la lista de workoutIds que lo componen.',
+    description: 'Crea un ciclo/circuito nuevo. Un circuito es una lista ORDENADA de apariciones (slots): el MISMO workout puede aparecer varias veces (ej. Strength A en dos momentos del ciclo), cada aparición se entrena y registra por separado. Usa `slots` para controlar orden/repeticiones/peso planeado; o `workoutIds` (los repetidos se permiten).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -356,8 +466,20 @@ const TOOLS = [
         endDate: { type: 'string', description: 'YYYY-MM-DD' },
         status: { type: 'string', enum: ['active', 'paused', 'completed'] },
         type: { type: 'string', enum: ['circuit', 'standalone'] },
-        workoutIds: { type: 'array', items: { type: 'string' } },
-        workoutWeights: { type: 'object', description: 'mapa workoutId -> peso override, ej. {"3":"28 kg"}' },
+        slots: {
+          type: 'array',
+          description: 'apariciones en orden; repite el mismo workoutId cuantas veces quieras. weight = peso PLANEADO/sugerido de esa aparición (opcional; el peso real se registra al completar).',
+          items: {
+            type: 'object',
+            required: ['workoutId'],
+            properties: {
+              workoutId: { type: 'string' },
+              weight: { type: 'string', description: 'peso planeado de esta aparición, ej. "2×18 kg"' },
+            },
+          },
+        },
+        workoutIds: { type: 'array', items: { type: 'string' }, description: 'alternativa simple a slots (se permiten ids repetidos, en orden)' },
+        workoutWeights: { type: 'object', description: 'legacy: mapa workoutId -> peso planeado' },
         saveAsTemplate: { type: 'boolean', description: 'default true: además del ciclo, crea una plantilla espejo para que aparezca en Database→Circuitos' },
       },
     },
@@ -387,31 +509,59 @@ const TOOLS = [
         status: { type: 'string', enum: ['active', 'paused', 'completed'] },
         endDate: { type: 'string' },
         isArchived: { type: 'boolean' },
-        workoutIds: { type: 'array', items: { type: 'string' } },
+        workoutIds: { type: 'array', items: { type: 'string' }, description: 'reordena/edita la composición (se permiten repetidos)' },
+        slots: {
+          type: 'array',
+          description: 'composición por aparición (con orden y peso planeado). Reemplaza workoutIds si se pasa.',
+          items: { type: 'object', required: ['workoutId'], properties: { workoutId: { type: 'string' }, weight: { type: 'string' }, id: { type: 'string' } } },
+        },
       },
     },
   },
   {
     name: 'log_session',
-    description: 'Registra una sesión de entrenamiento completada en el historial, dentro de un ciclo. Requiere cycleId y workoutId. Usa list_cycles para obtener el cycleId.',
+    description: 'Registra una sesión COMPLETADA en el historial, dentro de un ciclo. El peso REAL usado se guarda aquí (no en el workout). Si un workout aparece varias veces en el circuito, pasa slotId (de list_cycles) para indicar QUÉ aparición registras.',
     inputSchema: {
       type: 'object',
       required: ['cycleId', 'workoutId'],
       properties: {
         cycleId: { type: 'string' },
         workoutId: { type: 'string' },
+        slotId: { type: 'string', description: 'aparición específica dentro del circuito (obligatorio si el workout se repite en el ciclo; usa list_cycles para verlos)' },
+        weight: { type: 'string', description: 'peso REAL usado esa sesión, ej. "2×18 kg" o "24 kg"' },
+        weightCount: { type: 'number', description: 'número de pesas usado (1 o 2)' },
         date: { type: 'string', description: 'YYYY-MM-DD (default hoy)' },
         time: { type: 'string', description: 'HH:MM (default ahora)' },
-        progressiveOverload: { type: 'string', description: 'qué progresión se hizo (peso/reps/series)' },
-        comments: { type: 'string', description: 'cómo se sintió, notas de la sesión' },
+        progressiveOverload: { type: 'string', description: 'qué progresión se hizo respecto a la exposición anterior (variable que se avanza)' },
+        comments: { type: 'string', description: 'qué ocurrió ese día: sensaciones, Garmin, DOMS, modificaciones' },
         rpe: { type: 'number', description: 'esfuerzo percibido 1-10' },
         completed: { type: 'boolean', description: 'default true' },
       },
     },
   },
   {
+    name: 'update_log',
+    description: 'Actualiza (merge, sin duplicar) una sesión YA registrada. Úsalo para corregir/normalizar logs existentes (ej. separar bien comments vs progressiveOverload, o fijar el peso real). En circuito identifica por slotId (o workoutId si no se repite); en libre por workoutId + date.',
+    inputSchema: {
+      type: 'object',
+      required: ['cycleId'],
+      properties: {
+        cycleId: { type: 'string' },
+        workoutId: { type: 'string' },
+        slotId: { type: 'string', description: 'aparición a editar (circuito con repetidos)' },
+        date: { type: 'string', description: 'YYYY-MM-DD (requerido en ciclos libres/standalone para ubicar el log)' },
+        weight: { type: 'string', description: 'peso real usado' },
+        weightCount: { type: 'number' },
+        progressiveOverload: { type: 'string' },
+        comments: { type: 'string' },
+        rpe: { type: 'number' },
+        completed: { type: 'boolean' },
+      },
+    },
+  },
+  {
     name: 'get_history',
-    description: 'Devuelve el historial de sesiones completadas del usuario (a través de todos sus ciclos), más recientes primero. Úsalo para entender el progreso reciente.',
+    description: 'Devuelve el historial de sesiones completadas del usuario (a través de todos sus ciclos), más recientes primero. Cada fila trae slotId (aparición) y weight (peso real usado). Úsalo para entender el progreso reciente.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -433,6 +583,7 @@ async function dispatch(uid: string, name: string, args: any) {
     case 'create_template': return createTemplate(uid, args || {});
     case 'update_cycle': return updateCycle(uid, args.id, args || {});
     case 'log_session': return logSession(uid, args || {});
+    case 'update_log': return updateLog(uid, args || {});
     case 'get_history': return getHistory(uid, args || {});
     default: throw new Error(`Tool desconocida: ${name}`);
   }

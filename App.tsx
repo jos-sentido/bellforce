@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { KETTLEBELL_CIRCUIT } from './constants';
-import { AppState, CircuitCycle, WorkoutLog, Workout, CircuitTemplate, DailyMetric, Mission, CoachMessage, CoachKnowledge } from './types';
+import { AppState, CircuitCycle, CircuitSlot, WorkoutLog, Workout, CircuitTemplate, DailyMetric, Mission, CoachMessage, CoachKnowledge } from './types';
 import Layout from './components/Layout';
 import HomeView from './views/HomeView';
 import WorkoutDetailView from './views/WorkoutDetailView';
@@ -24,7 +24,15 @@ import {
   createCycle, updateCycle, saveLog, deleteLog,
   loadMetrics, saveMetric, loadMissions, saveMission, updateMission, deleteMission,
   loadCoachMessages, appendCoachMessage, clearCoachMessages,
+  cycleSlots, logSlotId,
 } from './services/db';
+
+// id estable para una NUEVA aparición de un workout en un circuito: 1ra = workoutId,
+// siguientes = workoutId__s2, __s3, … (según cuántas ya existan en los slots).
+const nextSlotId = (slots: CircuitSlot[], workoutId: string): string => {
+  const n = slots.filter(s => s.workoutId === workoutId).length + 1;
+  return n === 1 ? workoutId : `${workoutId}__s${n}`;
+};
 
 const EMPTY_STATE: AppState = {
   currentUser: null, allUsers: [], library: [], templates: [], cycles: [], currentCycleIndex: -1,
@@ -110,19 +118,24 @@ const App: React.FC = () => {
 
   const currentCycleIndex = useMemo(() => userCycles.findIndex(c => c.id === currentCycle?.id), [userCycles, currentCycle]);
 
+  // Slots del circuito actual (aparición por aparición; permite repetir un workout).
+  const currentSlots = useMemo(() => currentCycle ? cycleSlots(currentCycle) : [], [currentCycle]);
+
+  // Una "instancia entrenable" por slot: workout base + slotId + peso sugerido del
+  // slot (o del workout como referencia). El peso REAL se registra en el log.
   const activeWorkouts = useMemo(() => {
     if (!currentCycle) return [];
-    return (currentCycle.workoutIds || []).map(id => {
-      const base = state.library.find(w => w.id === id);
+    return currentSlots.map(slot => {
+      const base = state.library.find(w => w.id === slot.workoutId);
       if (!base) return null;
-      return { ...base, weight: currentCycle.workoutWeights?.[id] || base.weight };
-    }).filter(w => !!w) as Workout[];
-  }, [currentCycle, state.library]);
+      return { ...base, slotId: slot.id, weight: slot.weight || base.weight };
+    }).filter(w => !!w) as (Workout & { slotId: string })[];
+  }, [currentCycle, currentSlots, state.library]);
 
   const nextWorkoutName = useMemo(() => {
     if (!currentCycle) return null;
     const logs = currentCycle.logs || [];
-    const next = activeWorkouts.find(w => !logs.find(l => l.workoutId === w.id)?.completed);
+    const next = activeWorkouts.find(w => !logs.find(l => logSlotId(l) === w.slotId)?.completed);
     return next?.name || null;
   }, [currentCycle, activeWorkouts]);
 
@@ -266,31 +279,43 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // ---- Edición del circuito activo (persistiendo workoutIds) ----
-  const setCurrentCycleIds = useCallback((newIds: string[]) => {
+  // ---- Edición del circuito activo (persistiendo slots) ----
+  const setCurrentCycleSlots = useCallback((newSlots: CircuitSlot[]) => {
     if (!currentCycle) return;
-    updateCycle(currentCycle.id, { workoutIds: newIds }).catch(e => console.error('updateCycle', e));
-    setState(prev => ({ ...prev, cycles: prev.cycles.map(c => c.id === currentCycle.id ? { ...c, workoutIds: newIds } : c) }));
+    updateCycle(currentCycle.id, { slots: newSlots }).catch(e => console.error('updateCycle', e));
+    setState(prev => ({ ...prev, cycles: prev.cycles.map(c => c.id === currentCycle.id
+      ? { ...c, slots: newSlots, workoutIds: newSlots.map(s => s.workoutId) } : c) }));
   }, [currentCycle]);
 
   const handleAddToCircuit = useCallback((workoutId: string) => {
     if (!currentCycle) return;
-    setCurrentCycleIds([...(currentCycle.workoutIds || []), workoutId]);
-  }, [currentCycle, setCurrentCycleIds]);
+    const slots = cycleSlots(currentCycle);
+    setCurrentCycleSlots([...slots, { id: nextSlotId(slots, workoutId), workoutId }]);
+  }, [currentCycle, setCurrentCycleSlots]);
 
   const handleRemoveFromCircuit = useCallback((index: number) => {
     if (!currentCycle) return;
-    setCurrentCycleIds((currentCycle.workoutIds || []).filter((_, i) => i !== index));
-  }, [currentCycle, setCurrentCycleIds]);
+    const slots = cycleSlots(currentCycle);
+    const removed = slots[index];
+    // Borra también el log de ESA aparición (no el de sus gemelos).
+    if (removed) deleteLog(currentCycle.id, { slotId: removed.id, workoutId: removed.workoutId, date: '' } as WorkoutLog, false).catch(e => console.error('deleteLog', e));
+    setCurrentCycleSlots(slots.filter((_, i) => i !== index));
+  }, [currentCycle, setCurrentCycleSlots]);
 
   const handleReorderCircuit = useCallback((index: number, direction: 'up' | 'down') => {
     if (!currentCycle) return;
-    const ids = [...(currentCycle.workoutIds || [])];
+    const slots = [...cycleSlots(currentCycle)];
     const swap = direction === 'up' ? index - 1 : index + 1;
-    if (swap < 0 || swap >= ids.length) return;
-    [ids[index], ids[swap]] = [ids[swap], ids[index]];
-    setCurrentCycleIds(ids);
-  }, [currentCycle, setCurrentCycleIds]);
+    if (swap < 0 || swap >= slots.length) return;
+    [slots[index], slots[swap]] = [slots[swap], slots[index]];
+    setCurrentCycleSlots(slots);
+  }, [currentCycle, setCurrentCycleSlots]);
+
+  const handleSetSlotWeight = useCallback((index: number, weight: string) => {
+    if (!currentCycle) return;
+    const slots = cycleSlots(currentCycle).map((s, i) => i === index ? { ...s, weight: weight || undefined } : s);
+    setCurrentCycleSlots(slots);
+  }, [currentCycle, setCurrentCycleSlots]);
 
   // ---- Ciclos ----
   const handleStartTemplate = async (template: CircuitTemplate) => {
@@ -299,10 +324,11 @@ const App: React.FC = () => {
     const active = state.cycles.find(c => c.userId === user.id && c.status === 'active' && c.type !== 'standalone');
     if (active) updateCycle(active.id, { status: 'paused' }).catch(e => console.error('updateCycle', e));
 
+    const slots = cycleSlots({ workoutIds: template.workoutIds });
     const draft: Omit<CircuitCycle, 'id'> = {
       userId: user.id, name: template.name, startDate: new Date().toISOString(),
       logs: [], status: 'active', isArchived: false,
-      workoutIds: template.workoutIds, workoutWeights: {}, type: 'circuit',
+      slots, workoutIds: slots.map(s => s.workoutId), type: 'circuit',
     };
     setShowTemplatePicker(false);
     setIsViewingActiveCircuit(true);
@@ -324,10 +350,11 @@ const App: React.FC = () => {
     const active = state.cycles.find(c => c.userId === user.id && c.status === 'active' && c.type !== 'standalone' && c.id !== cycle.id);
     if (active) updateCycle(active.id, { status: 'paused' }).catch(e => console.error('updateCycle', e));
 
+    const slots = cycleSlots(cycle);
     const draft: Omit<CircuitCycle, 'id'> = {
       userId: user.id, name: cycle.name, startDate: new Date().toISOString(),
       logs: [], status: 'active', isArchived: false,
-      workoutIds: cycle.workoutIds, workoutWeights: cycle.workoutWeights, type: 'circuit',
+      slots, workoutIds: slots.map(s => s.workoutId), type: 'circuit',
     };
     setIsViewingActiveCircuit(true);
     setActiveTab('home');
@@ -355,23 +382,20 @@ const App: React.FC = () => {
 
   // Edición de un registro ya entrenado (histórico): peso, imágenes, plan,
   // comentarios y fecha. Persiste en el ciclo real del registro (no fuerza libre).
-  const handleUpdateHistoricalLog = useCallback((cycleId: string, originalLog: WorkoutLog, updatedLog: WorkoutLog, updatedWeight?: string, updatedDescription?: string) => {
+  const handleUpdateHistoricalLog = useCallback((cycleId: string, originalLog: WorkoutLog, updatedLog: WorkoutLog, _updatedWeight?: string, updatedDescription?: string) => {
     const user = state.currentUser;
     if (!user) return;
     const cycle = state.cycles.find(c => c.id === cycleId);
     if (!cycle) return;
     const isStandalone = cycle.type === 'standalone';
 
-    // 1) Actualizar el workout base (peso/descripción)
+    // 1) Solo la DESCRIPCIÓN edita la definición del workout (referencia). El PESO
+    //    ya no muta el workout: vive en el log (updatedLog.weight).
     let newLibrary = state.library;
-    if (updatedWeight !== undefined || updatedDescription !== undefined) {
+    if (updatedDescription !== undefined) {
       const base = state.library.find(w => w.id === originalLog.workoutId);
-      if (base) {
-        const updated: Workout = {
-          ...base,
-          weight: updatedWeight !== undefined ? updatedWeight : base.weight,
-          description: updatedDescription !== undefined ? updatedDescription : base.description,
-        };
+      if (base && updatedDescription !== base.description) {
+        const updated: Workout = { ...base, description: updatedDescription };
         newLibrary = state.library.map(w => w.id === base.id ? updated : w);
         updateWorkout(updated).catch(e => console.error('updateWorkout', e));
       }
@@ -383,41 +407,31 @@ const App: React.FC = () => {
     }
     saveLog(cycleId, updatedLog, isStandalone).catch(e => console.error('saveLog', e));
 
-    // 3) Peso registrado en el ciclo
-    let newWeights = cycle.workoutWeights;
-    if (updatedWeight !== undefined) {
-      newWeights = { ...(cycle.workoutWeights || {}), [updatedLog.workoutId]: updatedWeight };
-      updateCycle(cycleId, { workoutWeights: newWeights }).catch(e => console.error('updateCycle', e));
-    }
-
-    // 4) Estado local
+    // 3) Estado local (match por slot en circuito; por workout+fecha en libre)
     const matches = (l: WorkoutLog) => isStandalone
       ? (l.workoutId === originalLog.workoutId && l.date === originalLog.date)
-      : (l.workoutId === originalLog.workoutId);
+      : (logSlotId(l) === logSlotId(originalLog));
     setState(prev => ({
       ...prev,
       library: newLibrary,
       cycles: prev.cycles.map(c => c.id === cycleId
-        ? { ...c, workoutWeights: newWeights, logs: (c.logs || []).map(l => matches(l) ? updatedLog : l) }
+        ? { ...c, logs: (c.logs || []).map(l => matches(l) ? updatedLog : l) }
         : c),
     }));
     setSelectedLog(updatedLog);
   }, [state.currentUser, state.cycles, state.library]);
 
-  const handleCompleteWorkout = useCallback(async (log: WorkoutLog, updatedWeight?: string, updatedDescription?: string, isFinal: boolean = true) => {
+  const handleCompleteWorkout = useCallback(async (log: WorkoutLog, _updatedWeight?: string, updatedDescription?: string, isFinal: boolean = true) => {
     const user = state.currentUser;
     if (!user) return;
 
-    // 1) Actualizar workout en la librería (peso/descripción)
+    // 1) El PESO ya viaja en el log (log.weight). Solo la descripción edita la
+    //    definición del workout (referencia editable), sin mutar su peso.
     let newLibrary = state.library;
-    if (updatedWeight !== undefined || updatedDescription !== undefined) {
+    if (updatedDescription !== undefined) {
       const base = state.library.find(w => w.id === log.workoutId);
-      if (base) {
-        const updated: Workout = {
-          ...base,
-          weight: updatedWeight !== undefined ? updatedWeight : base.weight,
-          description: updatedDescription !== undefined ? updatedDescription : base.description,
-        };
+      if (base && updatedDescription !== base.description) {
+        const updated: Workout = { ...base, description: updatedDescription };
         newLibrary = state.library.map(w => w.id === base.id ? updated : w);
         updateWorkout(updated).catch(e => console.error('updateWorkout', e));
       }
@@ -445,25 +459,22 @@ const App: React.FC = () => {
     // 3) Guardar el log
     saveLog(targetCycle.id, log, isStandaloneMode).catch(e => console.error('saveLog', e));
 
-    // 4) Recalcular logs y campos del ciclo
+    // 4) Recalcular logs y campos del ciclo (match por slot en circuito)
     const existingLogs = targetCycle.logs || [];
     const logIdx = isStandaloneMode
       ? existingLogs.findIndex(l => l.date === log.date && l.workoutId === log.workoutId)
-      : existingLogs.findIndex(l => l.workoutId === log.workoutId);
+      : existingLogs.findIndex(l => logSlotId(l) === logSlotId(log));
     const updatedLogs = (logIdx !== -1 ? existingLogs.map((l, i) => i === logIdx ? log : l) : [...existingLogs, log])
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     const cyclePartial: Partial<CircuitCycle> = {};
-    const newWeights = updatedWeight !== undefined
-      ? { ...(targetCycle.workoutWeights || {}), [log.workoutId]: updatedWeight }
-      : targetCycle.workoutWeights;
-    if (updatedWeight !== undefined) cyclePartial.workoutWeights = newWeights;
-
     let newStatus = targetCycle.status;
     let newEndDate = targetCycle.endDate;
     if (!isStandaloneMode && isFinal) {
-      const totalExpected = (targetCycle.workoutIds || []).length;
-      if (updatedLogs.filter(l => l.completed).length >= totalExpected && totalExpected > 0) {
+      // Completo = todos los SLOTS tienen un log completado (por slotId).
+      const totalExpected = cycleSlots(targetCycle).length;
+      const completedSlots = new Set(updatedLogs.filter(l => l.completed).map(l => logSlotId(l)));
+      if (totalExpected > 0 && completedSlots.size >= totalExpected) {
         newStatus = 'completed';
         newEndDate = new Date().toISOString();
         cyclePartial.status = newStatus;
@@ -473,7 +484,7 @@ const App: React.FC = () => {
     if (Object.keys(cyclePartial).length) updateCycle(targetCycle.id, cyclePartial).catch(e => console.error('updateCycle', e));
 
     // 5) Estado local
-    const updatedCycle: CircuitCycle = { ...targetCycle, logs: updatedLogs, workoutWeights: newWeights, status: newStatus, endDate: newEndDate };
+    const updatedCycle: CircuitCycle = { ...targetCycle, logs: updatedLogs, status: newStatus, endDate: newEndDate };
     setState(prev => ({
       ...prev,
       library: newLibrary,
@@ -559,11 +570,14 @@ const App: React.FC = () => {
     const cycle = state.cycles.find(c => c.id === cycleId);
     if (!cycle) return;
     const updated = { ...log, isArchived: archived };
-    saveLog(cycleId, updated, cycle.type === 'standalone').catch(e => console.error('saveLog', e));
+    const isStandalone = cycle.type === 'standalone';
+    saveLog(cycleId, updated, isStandalone).catch(e => console.error('saveLog', e));
     setState(prev => ({
       ...prev,
       cycles: prev.cycles.map(c => c.id === cycleId
-        ? { ...c, logs: (c.logs || []).map(l => (l.workoutId === log.workoutId && l.date === log.date) ? updated : l) }
+        ? { ...c, logs: (c.logs || []).map(l => (isStandalone
+            ? (l.workoutId === log.workoutId && l.date === log.date)
+            : logSlotId(l) === logSlotId(log)) ? updated : l) }
         : c),
     }));
   }, [state.cycles]);
@@ -655,8 +669,12 @@ const App: React.FC = () => {
     }
 
     if (selectedWorkout) {
-      const latestWorkoutRef = state.library.find(w => w.id === selectedWorkout.id) || selectedWorkout;
-      const log = selectedLog || currentCycle?.logs.find(l => l.workoutId === selectedWorkout.id && !l.completed);
+      const sw = selectedWorkout as Workout & { slotId?: string };
+      // Conserva el slotId de la instancia seleccionada (para logs por aparición).
+      const latestBase = state.library.find(w => w.id === selectedWorkout.id) || selectedWorkout;
+      const latestWorkoutRef = sw.slotId ? { ...latestBase, slotId: sw.slotId } : latestBase;
+      const log = selectedLog || currentCycle?.logs.find(l =>
+        (sw.slotId ? logSlotId(l) === sw.slotId : l.workoutId === selectedWorkout.id) && !l.completed);
       const prevLog = userCycles.flatMap(c => c.logs)
         .filter(l => l.workoutId === selectedWorkout.id && l.completed)
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
@@ -684,6 +702,7 @@ const App: React.FC = () => {
           onAdd={handleAddToCircuit}
           onRemove={handleRemoveFromCircuit}
           onReorder={handleReorderCircuit}
+          onSetSlotWeight={handleSetSlotWeight}
           onBack={() => setIsManagingCircuit(false)}
         />
       );
@@ -709,8 +728,8 @@ const App: React.FC = () => {
           return (
             <TrainingHubView
               activeCycle={currentCycle}
-              completedCount={currentCycle?.logs.filter(l => l.completed).length || 0}
-              totalWorkouts={currentCycle?.workoutIds?.length || 0}
+              completedCount={currentCycle ? new Set((currentCycle.logs || []).filter(l => l.completed).map(l => logSlotId(l))).size : 0}
+              totalWorkouts={currentSlots.length}
               greeting={buildGreeting(state.currentUser.name, userCycles)}
               nextWorkoutName={nextWorkoutName}
               onSelectCircuit={() => setIsViewingActiveCircuit(true)}
