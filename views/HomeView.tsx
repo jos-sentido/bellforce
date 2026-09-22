@@ -35,6 +35,14 @@ const HomeView: React.FC<HomeViewProps> = ({
   const nextWorkoutIndex = workouts.findIndex(w => !logBySlot(w)?.completed);
   const nextWorkout = nextWorkoutIndex !== -1 ? workouts[nextWorkoutIndex] : null;
 
+  // Duración de la vuelta: días desde la 1ra sesión registrada (los descansos son
+  // orgánicos, así que las fechas dicen cuánto tardó realmente).
+  const completedDates = currentLogs.filter(l => l.completed).map(l => new Date(l.date).getTime());
+  const firstDate = completedDates.length ? Math.min(...completedDates) : null;
+  const lastDate = completedDates.length ? Math.max(...completedDates) : null;
+  const spanEnd = isCompleted && lastDate ? lastDate : Date.now();
+  const elapsedDays = firstDate ? Math.floor((spanEnd - firstDate) / 86400000) + 1 : 0;
+
   return (
     <div className="py-4 text-black animate-in fade-in duration-500">
       <div className="flex items-center gap-2 mb-6">
@@ -62,6 +70,11 @@ const HomeView: React.FC<HomeViewProps> = ({
           <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden border-2 border-black">
             <div className={`h-full transition-all duration-500 ${isCompleted ? 'bg-[#77b074]' : 'bg-[#ebca7a]'}`} style={{ width: `${progressPercent}%` }} />
           </div>
+          {firstDate && (
+            <p className="text-[10px] font-black uppercase text-gray-500 mt-2 tracking-wide">
+              {isCompleted ? `Vuelta completada en ${elapsedDays} ${elapsedDays === 1 ? 'día' : 'días'}` : `Vuelta en curso · ${elapsedDays} ${elapsedDays === 1 ? 'día' : 'días'} desde la 1ª sesión`}
+            </p>
+          )}
         </div>
 
         {isCompleted ? (

@@ -14,7 +14,7 @@ interface HistoryViewProps {
 }
 
 type LogItem = { kind: 'log'; date: string; log: WorkoutLog; cycle: CircuitCycle; workout?: Workout; isStandalone: boolean; archived: boolean };
-type DoneItem = { kind: 'circuitDone'; date: string; cycle: CircuitCycle; count: number; archived: boolean };
+type DoneItem = { kind: 'circuitDone'; date: string; cycle: CircuitCycle; count: number; days: number; archived: boolean };
 type Item = LogItem | DoneItem;
 
 const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], onRetake, onViewLog, onArchiveCycle, onUnarchiveCycle, onArchiveLog }) => {
@@ -45,7 +45,9 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
       }));
       if (cycle.status === 'completed' && cycle.type !== 'standalone') {
         const date = cycle.endDate || (logs.length ? logs[logs.length - 1].date : cycle.startDate);
-        arr.push({ kind: 'circuitDone', date, cycle, count: logs.length, archived: cycleArchived });
+        const ts = logs.map(l => new Date(l.date).getTime());
+        const days = ts.length ? Math.floor((Math.max(...ts) - Math.min(...ts)) / 86400000) + 1 : 1;
+        arr.push({ kind: 'circuitDone', date, cycle, count: logs.length, days, archived: cycleArchived });
       }
     });
     return arr.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -169,7 +171,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ cycles = [], workouts = [], o
                           </div>
                           <h4 className="font-heading text-base leading-tight mb-2">{item.cycle.name}</h4>
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-bold">{item.count} sesiones</span>
+                            <span className="text-[11px] font-bold">{item.count} sesiones · {item.days} {item.days === 1 ? 'día' : 'días'}</span>
                             <button onClick={() => onRetake(item.cycle)} className="bg-black text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_#ebca7a] active:translate-y-0.5 active:shadow-none">Retomar</button>
                           </div>
                         </div>
