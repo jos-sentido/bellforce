@@ -224,6 +224,32 @@ async function getHistory(uid: string, opts: any = {}) {
 // ---------------------------------------------------------------------------
 // Definición de tools (JSON Schema)
 // ---------------------------------------------------------------------------
+
+// Guía de formato para el campo `description` del workout. La app muestra este
+// texto tal cual (con saltos de línea), así que debe contener el workout COMPLETO
+// y legible, no un resumen.
+const WORKOUT_DESCRIPTION_GUIDE =
+  'Descripción COMPLETA y legible del workout, tal como se lee dentro de la app ' +
+  '(respeta los saltos de línea con \\n). NO es un resumen: debe alcanzar para ' +
+  'entrenarlo sin más contexto. Estructura obligatoria:\n' +
+  '1) Primera línea: número de rounds/series o el esquema (ej. "5 rounds", "EMOM 20 min", "AMRAP 15 min").\n' +
+  '2) Línea en blanco, luego un ejercicio por línea con formato "Ejercicio — reps/lado o detalle" ' +
+  '(ej. "Halo — 3 por dirección", "Lateral snatch — 3/lado").\n' +
+  '3) Línea en blanco y la intención/ejecución (cómo debe sentirse, transiciones, respiración, técnica).\n' +
+  '4) Línea final de intensidad objetivo (ej. "Intensidad: RPE ~4–5/10, idealmente Z1–Z2").\n' +
+  'Ejemplo:\n\n' +
+  '5 rounds\n\n' +
+  'Halo — 3 por dirección\n' +
+  'Clean con rotación — 3/lado\n' +
+  'Lateral snatch — 3/lado\n' +
+  'Reverse lunge + rotación — 3/lado\n' +
+  'Windmill — 3/lado\n' +
+  'Suitcase carry — 30–40 s/lado\n\n' +
+  'La intención es que cada round sea un flow continuo pero relajado. Transiciones ' +
+  'deliberadas, respiración controlada y técnica limpia. Nada de perseguir tiempos.\n\n' +
+  'Intensidad: RPE ~4–5/10. Si empiezas a jadear o los cleans/snatches se vuelven ' +
+  'trabajo metabólico, baja peso o descansa. La mayor parte debería sentirse Z1–Z2.';
+
 const TOOLS = [
   {
     name: 'list_workouts',
@@ -249,7 +275,7 @@ const TOOLS = [
         type: { type: 'string', description: 'tipo de ejercicio, ej. "fuerza", "potencia"' },
         equipment: { type: 'array', items: { type: 'string', enum: ['kettlebell', 'dumbbell', 'barbell'] } },
         duration: { type: 'string', description: 'ej. "10 min" o "5 rondas"' },
-        description: { type: 'string' },
+        description: { type: 'string', description: WORKOUT_DESCRIPTION_GUIDE },
         isPublic: { type: 'boolean' },
       },
     },
@@ -268,7 +294,7 @@ const TOOLS = [
         type: { type: 'string' },
         equipment: { type: 'array', items: { type: 'string', enum: ['kettlebell', 'dumbbell', 'barbell'] } },
         duration: { type: 'string' },
-        description: { type: 'string' },
+        description: { type: 'string', description: WORKOUT_DESCRIPTION_GUIDE },
         isArchived: { type: 'boolean' },
       },
     },
