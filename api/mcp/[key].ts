@@ -47,6 +47,13 @@ function getDb(): Firestore {
 const clean = <T extends object>(o: T): T =>
   Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as T;
 
+// Ancla una fecha "solo día" (YYYY-MM-DD) a mediodía local (sin Z) para que no se
+// corra de día al mostrarla en zonas negativas (México). Fechas con hora se dejan.
+function localizeDate(date?: string): string | undefined {
+  if (!date) return undefined;
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T12:00:00` : date;
+}
+
 // ---------------------------------------------------------------------------
 // Capa de acciones (cada una valida propiedad contra uid; Admin salta reglas)
 // ---------------------------------------------------------------------------
@@ -273,7 +280,7 @@ async function logSession(uid: string, data: any) {
   const log = clean({
     workoutId: data.workoutId,
     slotId, // identidad de la aparición (circuito)
-    date: data.date ?? now.toISOString().slice(0, 10),
+    date: localizeDate(data.date) ?? now.toISOString(),
     time: data.time ?? now.toTimeString().slice(0, 5),
     weight: data.weight, // peso REAL usado (autoritativo en historial)
     weightCount: typeof data.weightCount === 'number' ? data.weightCount : undefined,
@@ -323,7 +330,7 @@ async function updateLog(uid: string, data: any) {
     comments: data.comments,
     rpe: typeof data.rpe === 'number' ? data.rpe : undefined,
     completed: typeof data.completed === 'boolean' ? data.completed : undefined,
-    date: isStandalone ? undefined : data.date, // en standalone la fecha define el id; no se cambia aquí
+    date: isStandalone ? undefined : localizeDate(data.date), // en standalone la fecha define el id; no se cambia aquí
     aiAnalysisText: data.aiAnalysisText,
   });
   await ref.set(patch, { merge: true });

@@ -28,6 +28,15 @@ export function logSlotId(log: Pick<WorkoutLog, 'slotId' | 'workoutId'>): string
   return log.slotId || log.workoutId;
 }
 
+// Una fecha "solo día" (YYYY-MM-DD, típica del MCP/ChatGPT) se interpreta como
+// medianoche UTC y al mostrarla en zonas negativas (México UTC-6) retrocede un día.
+// La anclamos a MEDIODÍA LOCAL (sin Z) para que NUNCA se corra de día. Las fechas
+// que ya traen hora (ISO completo) se dejan igual.
+export function normalizeLogDate(date?: string): string {
+  if (!date) return date as any;
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T12:00:00` : date;
+}
+
 // ============================================================================
 // Capa de datos Firestore. Colecciones:
 //   workouts/{id}, templates/{id}, cycles/{id}, cycles/{id}/logs/{logId}
@@ -97,7 +106,10 @@ export async function loadCycles(uid: string): Promise<CircuitCycle[]> {
   const snap = await getDocs(query(collection(db, 'cycles'), where('userId', '==', uid)));
   const cycles = await Promise.all(snap.docs.map(async cDoc => {
     const logsSnap = await getDocs(collection(db, 'cycles', cDoc.id, 'logs'));
-    const logs = logsSnap.docs.map(l => l.data() as WorkoutLog);
+    const logs = logsSnap.docs.map(l => {
+      const data = l.data() as WorkoutLog;
+      return { ...data, date: normalizeLogDate(data.date) };
+    });
     return { id: cDoc.id, ...(cDoc.data() as any), logs } as CircuitCycle;
   }));
   return cycles;
