@@ -100,6 +100,7 @@ const App: React.FC = () => {
 
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<CircuitTemplate | null>(null);
+  const [previewWorkout, setPreviewWorkout] = useState<Workout | null>(null); // detalle de un workout dentro de la exploración del circuito
   const [isStandaloneMode, setIsStandaloneMode] = useState(false);
   const [isPickingStandalone, setIsPickingStandalone] = useState(false);
   const [isViewingActiveCircuit, setIsViewingActiveCircuit] = useState(false);
@@ -826,40 +827,60 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-[3000] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
            <div className="bg-white neo-brutalism p-6 rounded-2xl w-full max-w-sm border-black max-h-[85vh] flex flex-col">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="font-heading text-xl uppercase">{previewTemplate ? previewTemplate.name : 'Nueva Programación'}</h3>
-                <button onClick={() => { setShowTemplatePicker(false); setPreviewTemplate(null); }} className="text-gray-500 hover:text-black">
+                <h3 className="font-heading text-xl uppercase">{previewWorkout ? previewWorkout.name : previewTemplate ? previewTemplate.name : 'Nueva Programación'}</h3>
+                <button onClick={() => { setShowTemplatePicker(false); setPreviewTemplate(null); setPreviewWorkout(null); }} className="text-gray-500 hover:text-black">
                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
               </div>
 
-              {previewTemplate ? (
+              {previewTemplate && previewWorkout ? (
+                /* DETALLE de un workout dentro de la exploración del circuito (solo lectura) */
                 <>
-                  <button onClick={() => setPreviewTemplate(null)} className="flex items-center gap-1 text-[11px] font-black uppercase text-gray-500 mb-3">
+                  <button onClick={() => setPreviewWorkout(null)} className="flex items-center gap-1 text-[11px] font-black uppercase text-gray-500 mb-3">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                    Volver al circuito
+                  </button>
+                  <div className="flex-1 overflow-y-auto pr-1 mb-4 scrollbar-thin scrollbar-thumb-black">
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <span className="bg-[#ebca7a] text-black text-[11px] px-3 py-1 rounded-full font-black uppercase border-2 border-black">
+                        {(previewWorkout.weightCount || 1) >= 2 ? `2 × ${previewWorkout.weight}` : previewWorkout.weight}
+                      </span>
+                      <span className="bg-black text-white text-[11px] px-3 py-1 rounded-full font-bold uppercase">{previewWorkout.type}</span>
+                    </div>
+                    <label className="font-heading text-[11px] mb-1 block opacity-60 uppercase">Rutina</label>
+                    <p className="text-sm whitespace-pre-line leading-relaxed">{previewWorkout.description || 'Sin descripción.'}</p>
+                  </div>
+                  <button onClick={() => { handleStartTemplate(previewTemplate); setPreviewTemplate(null); setPreviewWorkout(null); }} className="w-full neo-brutalism bg-[#ebca7a] text-black p-4 rounded-xl font-heading text-sm uppercase border-black active:translate-y-1">Activar circuito</button>
+                </>
+              ) : previewTemplate ? (
+                <>
+                  <button onClick={() => { setPreviewTemplate(null); setPreviewWorkout(null); }} className="flex items-center gap-1 text-[11px] font-black uppercase text-gray-500 mb-3">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
                     Volver
                   </button>
-                  <p className="text-[10px] font-black uppercase text-gray-500 mb-3">{previewTemplate.workoutIds.length} sesiones en este circuito</p>
+                  <p className="text-[10px] font-black uppercase text-gray-500 mb-3">{previewTemplate.workoutIds.length} sesiones · toca uno para ver su rutina</p>
                   <div className="flex-1 overflow-y-auto space-y-2 pr-1 mb-4 scrollbar-thin scrollbar-thumb-black">
                     {previewTemplate.workoutIds.map((id, idx) => {
                       const w = state.library.find(x => x.id === id);
                       return (
-                        <div key={`${id}-${idx}`} className="p-3 border-2 border-black rounded-xl bg-gray-50 flex items-center gap-3">
+                        <button key={`${id}-${idx}`} onClick={() => w && setPreviewWorkout(w)} className="w-full text-left p-3 border-2 border-black rounded-xl bg-gray-50 hover:bg-[#ebca7a]/20 transition-colors flex items-center gap-3 group">
                           <span className="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0">{idx + 1}</span>
                           <div className="flex-1 overflow-hidden">
                             <p className="text-[11px] font-black uppercase leading-tight truncate">{w?.name || 'Workout'}</p>
                             <p className="text-[9px] text-gray-600 font-bold uppercase">{w?.weight} • {w?.type}</p>
                           </div>
-                        </div>
+                          <svg className="w-4 h-4 opacity-30 group-hover:opacity-100 transition-opacity shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
                       );
                     })}
                   </div>
-                  <button onClick={() => { handleStartTemplate(previewTemplate); setPreviewTemplate(null); }} className="w-full neo-brutalism bg-[#ebca7a] text-black p-4 rounded-xl font-heading text-sm uppercase border-black active:translate-y-1">Activar circuito</button>
+                  <button onClick={() => { handleStartTemplate(previewTemplate); setPreviewTemplate(null); setPreviewWorkout(null); }} className="w-full neo-brutalism bg-[#ebca7a] text-black p-4 rounded-xl font-heading text-sm uppercase border-black active:translate-y-1">Activar circuito</button>
                 </>
               ) : (
                 <>
                   <div className="flex-1 overflow-y-auto space-y-3 mb-6 pr-1 scrollbar-thin scrollbar-thumb-black">
                     {state.templates.map(t => (
-                      <button key={t.id} onClick={() => setPreviewTemplate(t)} className="w-full text-left p-4 border-2 border-black rounded-xl hover:bg-[#ebca7a]/20 transition-all flex justify-between items-center group">
+                      <button key={t.id} onClick={() => { setPreviewTemplate(t); setPreviewWorkout(null); }} className="w-full text-left p-4 border-2 border-black rounded-xl hover:bg-[#ebca7a]/20 transition-all flex justify-between items-center group">
                         <div>
                           <h4 className="font-heading text-xs uppercase">{t.name}</h4>
                           <p className="text-[10px] font-bold text-gray-500 uppercase">{t.workoutIds.length} Sesiones</p>

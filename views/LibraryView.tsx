@@ -383,17 +383,19 @@ const LibraryView: React.FC<LibraryViewProps> = ({
                  {previewT.isPublic ? 'Circuito Bellforce Global' : 'Circuito Personal'}
                </p>
              </div>
+             <p className="text-[10px] font-black uppercase text-gray-400 mb-2">Toca un workout para ver su rutina</p>
              <div className="flex-1 overflow-y-auto space-y-2 pr-2 mb-6 scrollbar-thin scrollbar-thumb-black">
                {previewT.workoutIds.map((id, idx) => {
                  const w = library.find(item => item.id === id);
                  return (
-                   <div key={`${id}-${idx}`} className="p-3 border-2 border-black rounded-xl bg-gray-50 flex items-center gap-3">
+                   <button key={`${id}-${idx}`} onClick={() => w && setPreviewW(w)} className="w-full text-left p-3 border-2 border-black rounded-xl bg-gray-50 hover:bg-[#ebca7a]/20 transition-colors flex items-center gap-3 group">
                      <span className="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-[11px] font-black shrink-0">{idx + 1}</span>
-                     <div className="flex-1">
+                     <div className="flex-1 overflow-hidden">
                        <p className="text-[12px] font-black uppercase leading-tight">{w?.name || 'Cargando...'}</p>
                        <p className="text-[10px] text-gray-600 font-bold uppercase flex items-center gap-1.5">{formatWeight(w?.weight, w?.weightCount)} • {w?.type}<EquipmentBadges equipment={w?.equipment} /></p>
                      </div>
-                   </div>
+                     <svg className="w-4 h-4 opacity-30 group-hover:opacity-100 transition-opacity shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7"></path></svg>
+                   </button>
                  );
                })}
              </div>
