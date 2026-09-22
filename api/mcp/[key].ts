@@ -239,6 +239,44 @@ async function createTemplate(uid: string, data: any) {
   return { id: ref.id, ...payload, createdAt: undefined };
 }
 
+async function listTemplates(uid: string, opts: any = {}) {
+  const db = getDb();
+  const col = db.collection('templates');
+  const [pub, mine] = await Promise.all([
+    col.where('isPublic', '==', true).get(),
+    col.where('createdBy', '==', uid).get(),
+  ]);
+  const map = new Map<string, any>();
+  [...pub.docs, ...mine.docs].forEach((d: any) => map.set(d.id, { id: d.id, ...d.data() }));
+  let items = Array.from(map.values());
+  if (!opts.includeArchived) items = items.filter(t => !t.isArchived);
+  return items;
+}
+
+async function updateTemplate(uid: string, id: string, patch: any) {
+  const db = getDb();
+  if (!id) throw new Error('updateTemplate: falta "id"');
+  const ref = db.collection('templates').doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) throw new Error(`updateTemplate: no existe plantilla ${id}`);
+  const cur = snap.data() as any;
+  if (cur.createdBy !== uid) throw new Error('updateTemplate: no eres el dueño de esta plantilla');
+  const { id: _i, createdBy: _c, createdAt: _ca, ...rest } = patch;
+  await ref.set(clean(rest), { merge: true });
+  return { id, ...cur, ...rest };
+}
+
+async function deleteTemplate(uid: string, id: string) {
+  const db = getDb();
+  if (!id) throw new Error('deleteTemplate: falta "id"');
+  const ref = db.collection('templates').doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) throw new Error(`deleteTemplate: no existe plantilla ${id}`);
+  if ((snap.data() as any).createdBy !== uid) throw new Error('deleteTemplate: no eres el dueño de esta plantilla');
+  await ref.delete();
+  return { deleted: id };
+}
+
 async function updateCycle(uid: string, id: string, patch: any) {
   const db = getDb();
   const ref = db.collection('cycles').doc(id);
@@ -505,6 +543,38 @@ const TOOLS = [
     },
   },
   {
+    name: 'list_templates',
+    description: 'Lista las plantillas de circuito (Database→Circuitos): públicas y propias. Cada una trae id, name, workoutIds. Úsalo para ubicar una plantilla antes de editarla (update_template) y evitar duplicados.',
+    inputSchema: {
+      type: 'object',
+      properties: { includeArchived: { type: 'boolean' } },
+    },
+  },
+  {
+    name: 'update_template',
+    description: 'Actualiza una plantilla existente por id (solo si eres el dueño): cambiar name, workoutIds (se permiten repetidos), isPublic, isArchived. Úsalo para sincronizar la plantilla con la composición de un ciclo, sin crear duplicados.',
+    inputSchema: {
+      type: 'object',
+      required: ['id'],
+      properties: {
+        id: { type: 'string' },
+        name: { type: 'string' },
+        workoutIds: { type: 'array', items: { type: 'string' }, description: 'lista ordenada (repetidos permitidos)' },
+        isPublic: { type: 'boolean' },
+        isArchived: { type: 'boolean' },
+      },
+    },
+  },
+  {
+    name: 'delete_template',
+    description: 'Borra una plantilla propia por id (para limpiar duplicados). No borra plantillas de otros.',
+    inputSchema: {
+      type: 'object',
+      required: ['id'],
+      properties: { id: { type: 'string' } },
+    },
+  },
+  {
     name: 'update_cycle',
     description: 'Actualiza un ciclo existente (solo si eres el dueño): cambiar estado, fechas, nombre, archivar, etc.',
     inputSchema: {
@@ -588,6 +658,9 @@ async function dispatch(uid: string, name: string, args: any) {
     case 'list_cycles': return listCycles(uid, args || {});
     case 'create_cycle': return createCycle(uid, args || {});
     case 'create_template': return createTemplate(uid, args || {});
+    case 'list_templates': return listTemplates(uid, args || {});
+    case 'update_template': return updateTemplate(uid, args.id, args || {});
+    case 'delete_template': return deleteTemplate(uid, args.id);
     case 'update_cycle': return updateCycle(uid, args.id, args || {});
     case 'log_session': return logSession(uid, args || {});
     case 'update_log': return updateLog(uid, args || {});
