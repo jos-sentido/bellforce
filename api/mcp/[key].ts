@@ -154,6 +154,31 @@ async function createCycle(uid: string, data: any) {
     createdAt: FieldValue.serverTimestamp(),
   });
   const ref = await db.collection('cycles').add(payload);
+
+  // Para que el circuito también aparezca en Database→Circuitos (que lista
+  // TEMPLATES, no cycles), creamos una plantilla espejo salvo type standalone
+  // o que se pida saltarla (saveAsTemplate:false).
+  let templateId: string | undefined;
+  if (type !== 'standalone' && data.saveAsTemplate !== false && Array.isArray(data.workoutIds) && data.workoutIds.length) {
+    const t = await createTemplate(uid, { name: payload.name, workoutIds: data.workoutIds, isPublic: data.isPublic === true });
+    templateId = t.id;
+  }
+  return { id: ref.id, ...payload, createdAt: undefined, templateId };
+}
+
+async function createTemplate(uid: string, data: any) {
+  const db = getDb();
+  if (!Array.isArray(data.workoutIds) || !data.workoutIds.length) {
+    throw new Error('createTemplate: falta "workoutIds" (lista de ids de workouts)');
+  }
+  const payload = clean({
+    name: data.name ?? 'Circuito',
+    workoutIds: data.workoutIds,
+    createdBy: uid,
+    isPublic: data.isPublic === true,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+  const ref = await db.collection('templates').add(payload);
   return { id: ref.id, ...payload, createdAt: undefined };
 }
 
@@ -333,6 +358,20 @@ const TOOLS = [
         type: { type: 'string', enum: ['circuit', 'standalone'] },
         workoutIds: { type: 'array', items: { type: 'string' } },
         workoutWeights: { type: 'object', description: 'mapa workoutId -> peso override, ej. {"3":"28 kg"}' },
+        saveAsTemplate: { type: 'boolean', description: 'default true: además del ciclo, crea una plantilla espejo para que aparezca en Database→Circuitos' },
+      },
+    },
+  },
+  {
+    name: 'create_template',
+    description: 'Crea una plantilla de circuito (aparece en Database→Circuitos de la app). Una plantilla es una definición reutilizable: nombre + lista de workoutIds. Distinta de un ciclo activo (create_cycle).',
+    inputSchema: {
+      type: 'object',
+      required: ['name', 'workoutIds'],
+      properties: {
+        name: { type: 'string' },
+        workoutIds: { type: 'array', items: { type: 'string' } },
+        isPublic: { type: 'boolean', description: 'default false (privada del usuario)' },
       },
     },
   },
@@ -391,6 +430,7 @@ async function dispatch(uid: string, name: string, args: any) {
     case 'delete_workout': return deleteWorkout(uid, args.id);
     case 'list_cycles': return listCycles(uid, args || {});
     case 'create_cycle': return createCycle(uid, args || {});
+    case 'create_template': return createTemplate(uid, args || {});
     case 'update_cycle': return updateCycle(uid, args.id, args || {});
     case 'log_session': return logSession(uid, args || {});
     case 'get_history': return getHistory(uid, args || {});
