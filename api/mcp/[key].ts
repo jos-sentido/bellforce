@@ -96,6 +96,20 @@ async function updateWorkout(uid: string, id: string, patch: any) {
   return { id, ...cur, ...rest };
 }
 
+async function deleteWorkout(uid: string, id: string) {
+  const db = getDb();
+  if (!id) throw new Error('deleteWorkout: falta "id"');
+  const ref = db.collection('workouts').doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) throw new Error(`deleteWorkout: no existe workout ${id}`);
+  const cur = snap.data() as any;
+  // Protección: nunca borrar contenido público/global (seed Bellforce).
+  if (cur.isPublic === true) throw new Error('deleteWorkout: no se pueden borrar workouts públicos/globales');
+  // (Fase 2 multiusuario: además exigir cur.createdBy === uid.)
+  await ref.delete();
+  return { deleted: id };
+}
+
 async function listCycles(uid: string, opts: any = {}) {
   const db = getDb();
   const snap = await db.collection('cycles').where('userId', '==', uid).get();
@@ -246,6 +260,15 @@ const TOOLS = [
     },
   },
   {
+    name: 'delete_workout',
+    description: 'Borra un workout propio de la base de datos por id. No puede borrar workouts públicos/globales (seed).',
+    inputSchema: {
+      type: 'object',
+      required: ['id'],
+      properties: { id: { type: 'string' } },
+    },
+  },
+  {
     name: 'list_cycles',
     description: 'Lista los ciclos (circuitos) del usuario. Opcionalmente incluye los logs de cada ciclo.',
     inputSchema: {
@@ -325,6 +348,7 @@ async function dispatch(uid: string, name: string, args: any) {
     case 'list_workouts': return listWorkouts(uid, args || {});
     case 'create_workout': return createWorkout(uid, args || {});
     case 'update_workout': return updateWorkout(uid, args.id, args || {});
+    case 'delete_workout': return deleteWorkout(uid, args.id);
     case 'list_cycles': return listCycles(uid, args || {});
     case 'create_cycle': return createCycle(uid, args || {});
     case 'update_cycle': return updateCycle(uid, args.id, args || {});
