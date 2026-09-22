@@ -5,8 +5,9 @@ const zlib = require('zlib');
 const fs = require('fs');
 const path = require('path');
 
-// Rayo del logo (viewBox 24): M13 10V3L4 14h7v7l9-11h-7z
-const BOLT = [[13, 10], [13, 3], [4, 14], [11, 14], [11, 21], [20, 10]];
+// Rayo EXACTO del logo (AuthView/Layout, viewBox 24):
+// M13 7 L9 12 H11.5 L10.5 17 L15 11.5 H12.5 L13 7 Z
+const BOLT = [[13, 7], [9, 12], [11.5, 12], [10.5, 17], [15, 11.5], [12.5, 11.5]];
 const GOLD = [235, 202, 122]; // #ebca7a
 const BLACK = [8, 8, 8];       // negro del isotipo
 
@@ -33,10 +34,17 @@ function chunk(type, data) {
   return Buffer.concat([len, typeBuf, data, crc]);
 }
 
+// bbox del rayo (para escalarlo/centrarlo con precisión)
+const BMINX = Math.min(...BOLT.map(p => p[0])), BMAXX = Math.max(...BOLT.map(p => p[0]));
+const BMINY = Math.min(...BOLT.map(p => p[1])), BMAXY = Math.max(...BOLT.map(p => p[1]));
+const BW = BMAXX - BMINX, BH = BMAXY - BMINY;
+
 // bg: 'circle' (disco negro sobre transparente) | 'square' (negro full-bleed, para maskable)
+// boltFactor = altura visible del rayo como fracción del canvas.
 function makePng(S, boltFactor, bg) {
-  const scale = (S * boltFactor) / 24;
-  const off = (S - 24 * scale) / 2;
+  const scale = (S * boltFactor) / BH;      // el rayo mide boltFactor*S de alto
+  const offX = (S - BW * scale) / 2 - BMINX * scale;
+  const offY = (S - BH * scale) / 2 - BMINY * scale;
   const cx = S / 2, cy = S / 2, r = S / 2; // círculo edge-to-edge
   const stride = S * 4 + 1;
   const raw = Buffer.alloc(stride * S);
@@ -44,7 +52,7 @@ function makePng(S, boltFactor, bg) {
   for (let y = 0; y < S; y++) {
     raw[p++] = 0; // filter byte
     for (let x = 0; x < S; x++) {
-      const bx = (x - off) / scale, by = (y - off) / scale;
+      const bx = (x - offX) / scale, by = (y - offY) / scale;
       const inBolt = pointInPoly(bx, by, BOLT);
       let col, a;
       const inCircle = bg === 'square' ? true : ((x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2) <= r * r;
@@ -66,14 +74,14 @@ const outDir = path.join(__dirname, '..', 'public', 'icons');
 fs.mkdirSync(outDir, { recursive: true });
 const jobs = [
   // any: círculo negro sobre transparente (se ve como el isotipo)
-  ['icon-192.png', 192, 0.5, 'circle'],
-  ['icon-512.png', 512, 0.5, 'circle'],
-  ['favicon-64.png', 64, 0.5, 'circle'],
+  ['icon-192.png', 192, 0.48, 'circle'],
+  ['icon-512.png', 512, 0.48, 'circle'],
+  ['favicon-64.png', 64, 0.48, 'circle'],
   // maskable: negro full-bleed (Android lo enmascara a círculo/squircle)
-  ['icon-192-maskable.png', 192, 0.46, 'square'],
-  ['icon-512-maskable.png', 512, 0.46, 'square'],
+  ['icon-192-maskable.png', 192, 0.44, 'square'],
+  ['icon-512-maskable.png', 512, 0.44, 'square'],
   // iOS: siempre esquina redondeada, fondo negro
-  ['apple-touch-icon.png', 180, 0.5, 'square'],
+  ['apple-touch-icon.png', 180, 0.48, 'square'],
 ];
 for (const [name, size, bf, bg] of jobs) {
   fs.writeFileSync(path.join(outDir, name), makePng(size, bf, bg));
