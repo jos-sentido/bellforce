@@ -45,7 +45,7 @@ function makePng(S, boltFactor, bg) {
   const scale = (S * boltFactor) / BH;      // el rayo mide boltFactor*S de alto
   const offX = (S - BW * scale) / 2 - BMINX * scale;
   const offY = (S - BH * scale) / 2 - BMINY * scale;
-  const cx = S / 2, cy = S / 2, r = S / 2; // círculo edge-to-edge
+  const cx = S / 2, cy = S / 2, r = (S / 2) * 0.84; // círculo con margen (como el logo, ~84%)
   const stride = S * 4 + 1;
   const raw = Buffer.alloc(stride * S);
   let p = 0;
@@ -73,15 +73,15 @@ function makePng(S, boltFactor, bg) {
 const outDir = path.join(__dirname, '..', 'public', 'icons');
 fs.mkdirSync(outDir, { recursive: true });
 const jobs = [
-  // any: círculo negro sobre transparente (se ve como el isotipo)
-  ['icon-192.png', 192, 0.48, 'circle'],
-  ['icon-512.png', 512, 0.48, 'circle'],
-  ['favicon-64.png', 64, 0.48, 'circle'],
-  // maskable: negro full-bleed (Android lo enmascara a círculo/squircle)
-  ['icon-192-maskable.png', 192, 0.44, 'square'],
-  ['icon-512-maskable.png', 512, 0.44, 'square'],
+  // any: círculo negro con margen sobre transparente (se ve como el isotipo)
+  ['icon-192.png', 192, 0.42, 'circle'],
+  ['icon-512.png', 512, 0.42, 'circle'],
+  ['favicon-64.png', 64, 0.42, 'circle'],
+  // maskable: negro full-bleed (Android lo enmascara); rayo dentro de zona segura
+  ['icon-192-maskable.png', 192, 0.40, 'square'],
+  ['icon-512-maskable.png', 512, 0.40, 'square'],
   // iOS: siempre esquina redondeada, fondo negro
-  ['apple-touch-icon.png', 180, 0.48, 'square'],
+  ['apple-touch-icon.png', 180, 0.42, 'square'],
 ];
 for (const [name, size, bf, bg] of jobs) {
   fs.writeFileSync(path.join(outDir, name), makePng(size, bf, bg));
