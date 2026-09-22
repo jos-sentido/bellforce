@@ -2,7 +2,7 @@
 export type UserRole = 'admin' | 'user';
 
 // Tipos de pesas que puede usar un workout. Un workout puede combinar varias (entrenamiento mixto).
-export type EquipmentType = 'kettlebell' | 'dumbbell' | 'barbell';
+export type EquipmentType = 'kettlebell' | 'dumbbell' | 'barbell' | 'rings';
 
 // Conocimiento editable del coach (capa 2): los "documentos" tipo GPT.
 export interface CoachKnowledge {

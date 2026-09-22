@@ -185,18 +185,20 @@ export const KETTLEBELL_CIRCUIT: Workout[] = [
 ];
 
 // Tipos de pesas soportados y su presentación en UI/prompts de IA.
-export const EQUIPMENT_TYPES: EquipmentType[] = ["kettlebell", "dumbbell", "barbell"];
+export const EQUIPMENT_TYPES: EquipmentType[] = ["kettlebell", "dumbbell", "barbell", "rings"];
 
 export const EQUIPMENT_LABELS: Record<EquipmentType, string> = {
   kettlebell: "Kettlebell",
   dumbbell: "Mancuerna",
   barbell: "Barra",
+  rings: "Aros",
 };
 
 export const EQUIPMENT_SHORT_LABELS: Record<EquipmentType, string> = {
   kettlebell: "KB",
   dumbbell: "DB",
   barbell: "BB",
+  rings: "AR",
 };
 
 // Forma plural natural para usar dentro de una oración (prompts de IA, textos).
@@ -204,6 +206,7 @@ const EQUIPMENT_PLURAL_LABELS: Record<EquipmentType, string> = {
   kettlebell: "kettlebells",
   dumbbell: "mancuernas",
   barbell: "barra",
+  rings: "aros olímpicos",
 };
 
 // Describe en español natural qué pesas usa un workout, para prompts de IA y textos.
