@@ -128,13 +128,27 @@ async function listCycles(uid: string, opts: any = {}) {
 
 async function createCycle(uid: string, data: any) {
   const db = getDb();
+  const status = data.status ?? 'active';
+  const type = data.type ?? 'circuit';
+  // Igual que la app (handleStartCycle): al iniciar un circuito activo, pausa el
+  // circuito activo anterior. Así el Hub muestra el ciclo nuevo (asume 1 activo).
+  if (status === 'active' && type !== 'standalone') {
+    const prev = await db.collection('cycles')
+      .where('userId', '==', uid).where('status', '==', 'active').get();
+    const batch = db.batch();
+    let toPause = 0;
+    prev.docs.forEach(d => {
+      if ((d.data() as any).type !== 'standalone') { batch.update(d.ref, { status: 'paused' }); toPause++; }
+    });
+    if (toPause) await batch.commit();
+  }
   const payload = clean({
     userId: uid,
     name: data.name ?? 'Circuito',
     startDate: data.startDate ?? new Date().toISOString().slice(0, 10),
     endDate: data.endDate,
-    status: data.status ?? 'active',
-    type: data.type ?? 'circuit',
+    status,
+    type,
     workoutIds: Array.isArray(data.workoutIds) ? data.workoutIds : undefined,
     workoutWeights: data.workoutWeights,
     createdAt: FieldValue.serverTimestamp(),
